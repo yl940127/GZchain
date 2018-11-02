@@ -48,5 +48,16 @@ public enum PlaceEnum {
 		}
 		return null;
 	}
-	
+	public enum ProductStatus {
+		/**
+		 *在销售
+		 */
+		ON_SALE,
+		/**
+		 * 已销售
+		 */
+		LEAVE_SALE
+
+	}
+
 }

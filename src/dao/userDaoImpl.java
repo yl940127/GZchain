@@ -93,7 +93,7 @@ public class userDaoImpl implements userDao {
 			pstmt.setObject(7, userDTO.getIdcard());
 			pstmt.setObject(8, userDTO.getBirthday());
 			pstmt.setObject(9, userDTO.getEducation());
-			pstmt.setObject(10, userDTO.getSex());
+			pstmt.setObject(10, userDTO.getGender());
 			pstmt.setObject(11, userDTO.getHeadimgurl());
 			result = pstmt.executeUpdate();
 			

@@ -25,7 +25,7 @@ public class UsersDTO implements Serializable {
 
     private String education;
 
-    private Integer sex;
+    private String gender;
 
     private String headimgurl;
 
@@ -103,12 +103,12 @@ public class UsersDTO implements Serializable {
         this.education = education;
     }
 
-    public Integer getSex() {
-        return sex;
+    public String getGender() {
+        return gender;
     }
 
-    public void setSex(Integer sex) {
-        this.sex = sex;
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public String getHeadimgurl() {
@@ -140,7 +140,7 @@ public class UsersDTO implements Serializable {
             && (this.getIdcard() == null ? other.getIdcard() == null : this.getIdcard().equals(other.getIdcard()))
             && (this.getBirthday() == null ? other.getBirthday() == null : this.getBirthday().equals(other.getBirthday()))
             && (this.getEducation() == null ? other.getEducation() == null : this.getEducation().equals(other.getEducation()))
-            && (this.getSex() == null ? other.getSex() == null : this.getSex().equals(other.getSex()))
+            && (this.getGender() == null ? other.getGender() == null : this.getGender().equals(other.getGender()))
             && (this.getHeadimgurl() == null ? other.getHeadimgurl() == null : this.getHeadimgurl().equals(other.getHeadimgurl()));
     }
 
@@ -157,7 +157,7 @@ public class UsersDTO implements Serializable {
         result = prime * result + ((getIdcard() == null) ? 0 : getIdcard().hashCode());
         result = prime * result + ((getBirthday() == null) ? 0 : getBirthday().hashCode());
         result = prime * result + ((getEducation() == null) ? 0 : getEducation().hashCode());
-        result = prime * result + ((getSex() == null) ? 0 : getSex().hashCode());
+        result = prime * result + ((getGender() == null) ? 0 : getGender().hashCode());
         result = prime * result + ((getHeadimgurl() == null) ? 0 : getHeadimgurl().hashCode());
         return result;
     }
@@ -177,7 +177,7 @@ public class UsersDTO implements Serializable {
         sb.append(", idcard=").append(idcard);
         sb.append(", birthday=").append(birthday);
         sb.append(", education=").append(education);
-        sb.append(", sex=").append(sex);
+        sb.append(", gender=").append(gender);
         sb.append(", headimgurl=").append(headimgurl);
         sb.append(", serialVersionUID=").append(serialVersionUID);
         sb.append("]");

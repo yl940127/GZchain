@@ -23,7 +23,7 @@ public class Converter {
 		user.setIdcard(rs.getString("idCard"));
 		user.setBirthday(rs.getDate("birthday"));
 		user.setEducation(rs.getString("education"));
-		user.setSex(rs.getInt("sex"));
+		user.setGender(rs.getString("gender"));
 		user.setHeadimgurl(rs.getString("headImgUrl"));
 		
 		return user;

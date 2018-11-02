@@ -1,4 +1,5 @@
 <%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%
 	String path = request.getContextPath();
 	String basePath = request.getScheme() + "://"
@@ -50,8 +51,16 @@ background-color: grey;
 					src="images/zxcf_qq.png" alt=""></a>
 			</div>
 			<div class="zxcf_top_r fr">
-				<a href="login.jsp" class="curspan">立即登录</a> <span>|</span> <a
-					href="register.jsp">免费注册</a> <span>|</span> <a href="#">常见问题</a>
+				<c:if test="${sessionScope.user==null}">
+					<a href="login.jsp" class="curspan">立即登录</a>
+					<span>|</span>
+					<a href="register.jsp">免费注册</a>
+				</c:if>
+				<c:if test="${sessionScope.user!=null}">
+					<span>你好，${user.getUsername()}</span>
+				</c:if>
+				<span>|</span>
+				<a href="#">常见问题</a>
 			</div>
 		</div>
 	</div>
