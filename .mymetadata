@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="PSP"
+  id="myeclipse.1483450517406"
+  context-root="/PSP"
+  j2ee-spec="5.0"
+  archive="PSP.war">
+  <attributes>
+    <attribute name="webrootdir" value="WebRoot" />
+  </attributes>
+</project-module>
+

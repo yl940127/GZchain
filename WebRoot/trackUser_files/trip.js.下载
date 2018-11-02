@@ -1,0 +1,1225 @@
+
+var _debug;
+bt.module({builder: function(bt){
+    var $ = jQuery;
+    var j$ = jQuery;
+
+    var map;
+    var index = -1;
+    var info_windows = {};
+    var markers = {};
+
+    var popupMap;
+    var marker;
+    var currentHotel;
+
+    var bookmarkTrip = function (e) {
+        e.preventDefault();
+        var obj = j$(this);
+        var url = '/trips/' + j$('#trip_id').attr('value');
+        url += obj.hasClass('bookmarked')?'/delete_bookmark/':'/bookmark/';
+        if (!BT_USER_ID) {
+            bt.misc.redirect_to_login(function () {
+                j$.ajax({url: url});
+            });
+            return false;
+        }
+
+        obj.fadeTo(0.3);
+        j$.ajax({
+            url: url,
+            success: function(resp){
+                if(resp.error) {
+                } else {
+                    if (obj.hasClass('bookmarked')) {
+                        obj.removeClass('bookmarked');
+                        bt.misc.modifyCount(obj.find("b"), -1);
+                    } else {
+                        obj.addClass('bookmarked');
+                        bt.misc.modifyCount(obj.find("b"), 1);
+                    }
+                }
+                obj.fadeTo(1);
+            }
+        });
+    };
+
+    var readyToCommentTrip = function (e) {
+        e.preventDefault();
+        if (!BT_USER_ID) {
+            bt.misc.redirect_to_login();
+            return false;
+        }
+        j$("form#comment-form textarea").focus();
+    };
+
+    var deleteTrip = function (e) {
+        e.preventDefault();
+        if(confirm('确定要删除此游记吗？') == false) return false;
+        j$.ajax({
+            type: 'POST',
+            url: j$(this).attr('href'),
+            type: 'DELETE',
+            success: function(resp) {
+                if(resp.error) {
+                    alert(resp.error);
+                } else {
+                    var redirect = j$("#delete-trip a.delete").attr("data-redirect-href");
+                    j$(location).attr("href", redirect);
+                }
+            }
+        });
+        return false;
+    };
+
+    function refreshRecommendedPanel() {
+        j$.ajax({
+            url: j$("#right .recommended-panel").data("url"),
+            success: function(resp) {
+                j$("#right .recommended-panel").html(resp);
+            }
+        });
+    }
+
+    function refreshScheduleLine(trip_id) {
+        j$.ajax({
+            url: "/trips/" + trip_id + "/schedule_line/",
+            success: function(resp) {
+                j$("#right #trip-line-schedule").html(resp);
+                var mileage = j$("#trip-line-schedule").data("mileage") + 'km';
+                j$("#line-schedule .panel-header .num").html(mileage);
+            }
+        });
+    }
+
+    function popup(new_index) {
+        if (index >= 0)
+            info_windows[index].close();
+        else if (map.getZoom() < 14)
+            map.setZoom(14);
+        info_windows[new_index].open(map, markers[new_index]);
+        index = new_index;
+        update_opacity();
+    }
+
+    function createPointImage(type) {
+        return new google.maps.MarkerImage(STATIC_URL+'img/new_icon_' + type + '.png',
+                                           new google.maps.Size(35, 37),
+                                           new google.maps.Point(0, 0),
+                                           new google.maps.Point(15, 34));
+    }
+
+    function addWaypoint(i, data, type, cls) {
+        var image;
+        if (type) image = createPointImage(type);
+        var contentString = '';
+        var prefix = '<div id="map_popup_info" '; // NOTE: NO ">" here.
+                                                  // Should add it below
+        var postfix = '</div>';
+        if (cls == "start") {
+            prefix += 'class="start-popup" >';
+            contentString = prefix + '<p class="start">游记起点</p>' + postfix;
+        } else if (cls == "photo") {
+            prefix += 'class="photo-popup" >';
+            contentString = prefix + '<a href="#wp' + data[2] + '"><img class="map-popup-img" loadsrc="' + data[1] + '" /></a>' + postfix;
+            j$('#wp' + data[2]).attr('lat', data[0].lat());
+            j$('#wp' + data[2]).attr('lng', data[0].lng());
+        } else if (cls == "text") {
+            prefix += 'class="text-popup" >';
+            contentString = prefix + '<a class="text" href="#wp' + data[2] + '">"' + data[1] + '"</a>' + postfix;
+            j$('#wp' + data[2]).attr('lat', data[0].lat());
+            j$('#wp' + data[2]).attr('lng', data[0].lng());
+        } else if (cls == "stop") {
+            prefix += 'class="start-popup" >';
+            contentString = prefix + '<p class="start">游记终点</p>' + postfix;
+        }
+
+        var marker = new google.maps.Marker({
+            position: data[0],
+            map: map,
+            icon: image
+        });
+        markers[i] = marker;
+
+        var infowindow = new google.maps.InfoWindow({
+            content: contentString,
+            disableAutoPan: false
+        });
+        google.maps.event.addListener(infowindow, "domready", function() {
+            var img = new Image(),
+                img_obj = j$(".map-popup-img"),
+                loadsrc = img_obj.attr('loadsrc');
+            img.onload = function(){
+                img_obj.attr('src',loadsrc);
+                bt.misc.centerAlignImg(img_obj, 150, 200, false);
+            }
+            img.src = loadsrc;
+        });
+        info_windows[i] = infowindow;
+
+        google.maps.event.addListener(marker, 'click', function(e) {
+            popup(i);
+        });
+    }
+
+    function getData(point) {
+        var items = point.children();
+        var lat = parseFloat(j$(items[0]).text());
+        var lon = parseFloat(j$(items[1]).text());
+        var content = j$(items[2]).text();
+        var wp_id = null;
+        if (items.length > 3)
+            wp_id = j$(items[3]).text();
+        return [new google.maps.LatLng(lat, lon), content, wp_id];
+    }
+
+    function initialize() {
+        if(USER_AGENT != 0) {
+            return;
+        }
+        var options = {
+            zoom: 14,
+            maxZoom: 18,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        };
+
+        var url = '/trips/' + j$('#trip_id').attr('value') + '/path/';
+        j$.ajax({
+            type: 'GET',
+            url: url,
+            async: false,
+            success: function(resp) {
+                j$(resp).insertAfter(j$(".trip-wps"));
+            }
+        });
+
+        var points = j$('#map_data').children();
+        var coordinates = [];
+        var latlngbounds = new google.maps.LatLngBounds();
+
+        map = new google.maps.Map(document.getElementById("trip_map"), options);
+        _debug = map;
+
+        points.each(function(i, point) {
+            point = j$(point);
+            var type = point.attr('data-type');
+            var cls = point.attr('class');
+            var data = getData(point);
+            if (type != 'track')
+                addWaypoint(i, data, type, cls);
+            coordinates.push(data[0]);
+            latlngbounds.extend(data[0]);
+        });
+
+        var path = new google.maps.Polyline({
+            path: coordinates,
+            strokeColor: "#0695f8",
+            strokeOpacity: 1.0,
+            strokeWeight: 4
+        });
+
+        if (points.length == 1)
+            map.setCenter(coordinates[0]);
+        else {
+            map.fitBounds(latlngbounds);
+            path.setMap(map);
+        }
+
+        if (j$('#map_data').children('[class!="track"]').length <= 1)
+            {j$('.map-controller-next').addClass("map-controller-next-disable");}
+        j$('.map-controller-prev').addClass("map-controller-prev-disable");
+        j$('.map-controller-next').on('click', move_to_next);
+        j$('.map-controller-prev').on('click', move_to_prev);
+        j$('.map-controller-play').on('click', auto_play);
+        j$('.map-controller-pause').on('click', trip_pause);
+        j$('#map_popup a.right').live('click', move_to_next);
+        j$('#map_popup a.left').live('click', move_to_prev);
+
+        j$('.trip-map-warp').show();
+    }
+
+    function update_opacity() {
+        var waypoints = j$('#map_data').children('[class!="track"]');
+        var first_index = waypoints.first().index();
+        var last_index = waypoints.last().index();
+        if (index == first_index) {
+            j$('.map-controller-prev').addClass("map-controller-prev-disable");
+        } else {
+            j$('.map-controller-prev').removeClass("map-controller-prev-disable");
+        }
+        if (index == last_index) {
+            j$('.map-controller-next').addClass("map-controller-next-disable");
+        } else {
+            j$('.map-controller-next').removeClass("map-controller-next-disable");
+        }
+    }
+
+    function move_to_next(e) {
+        e.preventDefault();
+        if (j$(this).hasClass("map-controller-next-disable")) {
+            return false;
+        }
+
+        var current_point;
+        if (index >= 0) {
+            current_point = j$('#map_data li:nth-child(' + (index + 1) + ')').nextAll('li[class!="track"]').first();
+        } else {
+            current_point = j$('#map_data').children('[class!="track"]').first();
+        }
+
+        var new_index = current_point.index();
+        var latlon = getData(current_point)[0];
+        map.panTo(latlon);
+        popup(new_index);
+        return false;
+    }
+
+    function move_to_prev(e) {
+        e.preventDefault();
+        if (j$(this).hasClass("map-controller-prev-disable")) {
+            return false;
+        }
+
+        var current_point = j$('#map_data li:nth-child(' + (index + 1) + ')').prevAll('[class!="track"]').first();
+        var new_index = current_point.index();
+        var latlon = getData(current_point)[0];
+        map.panTo(latlon);
+        popup(new_index);
+        return false;
+    }
+
+    var mapInterval = 0;
+    function auto_play(e) {
+        e.preventDefault();
+        j$('.map-controller-play').hide();
+        j$('.map-controller-pause').show();
+        j$('.map-controller-next').trigger('click');
+
+        mapInterval = setInterval(function () {
+            j$('.map-controller-next').trigger('click');
+        }, 6000);
+    }
+
+    function trip_pause (e) {
+        e.preventDefault();
+        j$('.map-controller-play').show();
+        j$('.map-controller-pause').hide();
+        clearInterval(mapInterval);
+    }
+
+    var initTripCommentEvent = function() {
+        var form = j$("form#comment-form");
+        form.unbind("submit");
+        form.submit(function() {
+            form.find(".submit-btn").css("opacity", 0.3);
+            j$.ajax({
+                url: form.attr("action"),
+                type: 'POST',
+                data: form.serialize(),
+                success: function(resp) {
+                    if(resp.error) {
+                        alert(resp.error);
+                    } else {
+                        loadTripComments(-1);
+                        form.find("textarea").val("");
+                        form.find("input.to").val("");
+                        bt.misc.modifyCount(j$(".trip-dtl .comment-count span"), 1);
+                        bt.misc.modifyCount(j$(".trip-tools-comment b"), 1);
+                    }
+                }
+            }).done(function() {
+                form.find(".submit-btn").css("opacity", 1);
+            });
+            return false;
+        });
+        j$(".comment-item .meta .btn-delete").unbind("click");
+        j$(".comment-item .meta .btn-delete").click(function(e) {
+            e.preventDefault();
+            var sure = confirm("确定要删除该评论？");
+            if(!sure) {
+                return;
+            }
+            var comment = j$(this).parents(".comment-item");
+            var comment_id = comment.data("comment-id");
+            var data = bt.misc.initPostData();
+            data["id"] = comment_id;
+            j$.ajax({
+                url: form.attr("action").replace("comment", "delete_comment"),
+                data: data,
+                type: "POST",
+                success: function(resp) {
+                    if(resp.error) {
+                        alert(resp.error);
+                    } else {
+                        bt.misc.modifyCount(j$(".trip-dtl .comment-count span"), -1);
+                        bt.misc.modifyCount(j$(".trip-tools-comment b"), -1);
+                        loadTripComments(j$(".paginator .current-page").html());
+                    }
+                }
+            });
+        });
+        j$(".comment-item .meta .btn-reply").unbind("click");
+        j$(".comment-item .meta .btn-reply").click(function(e) {
+            e.preventDefault();
+            var uid = j$(this).parents(".comment-item").data("uid");
+            var uname = j$(this).parents(".comment-item").data("uname");
+            form.find(".to").val(uid);
+            var ctrl = form.find("textarea");
+            ctrl.val("回复" + uname + ": ");
+            ctrl.focus();
+            var pos = ctrl.val().length;
+            if(ctrl[0].setSelectionRange) {
+                ctrl[0].focus();
+                ctrl[0].setSelectionRange(pos, pos);
+            } else if (ctrl[0].createTextRange) {
+                var range = ctrl[0].createTextRange();
+                range.collapse(true);
+                range.moveEnd('character', pos);
+                range.moveStart('character', pos);
+                range.select();
+            }
+        });
+        j$(".trip-comment-panel .paginator .page").unbind("click");
+        j$(".trip-comment-panel .paginator .page").click(function(e) {
+            e.preventDefault();
+            loadTripComments(j$(this).data("page"), gotoCommentTop);
+            return false;
+        });
+    };
+
+    var gotoCommentTop = function () {
+        var _commentTop = j$("#comment").position().top;
+        $("html, body").animate({ scrollTop: _commentTop });
+    };
+
+    var loadTripComments = function(page, callback) {
+        var p = page || j$("#comment").data("init-page") || 1;
+        j$(".trip-comment-panel .content").css("opacity", 0.3);
+        j$.ajax({
+            url: j$("#comment").data("comment-url"),
+            data: 'page=' + p,
+            type: 'GET',
+            success: function(resp) {
+                j$(".trip-comment-panel .content").html(resp);
+                initTripCommentEvent();
+                if (callback) {
+                    callback();
+                }
+            }
+        }).done(function() {
+            j$(".trip-comment-panel .content").css("opacity", 1);
+        });
+    };
+
+    var handleIECenterAlign = function() {
+        if (j$.browser.msie && j$.browser.version <= 7) {
+            var target_div = j$("#line-schedule .panel-content");
+            var holder_w = j$(".airline-panel").width();
+            j$(".first-show", target_div).each(function() {
+                var _this = this;
+                j$(".airline-panel", j$(_this)).each(function() {
+                    var w = ((j$(".num-bg", j$(this)).width() +
+                        parseInt(j$(".num-bg", j$(this)).css("margin-right"))) *
+                        parseInt(j$(".airline-num").data("count")));
+                    j$(".airline-num", j$(this)).css("padding-left", (holder_w - w) / 2);
+
+                    var plane_icon = j$(".airplane", j$(this));
+                    var w_sub = (j$(".departure-info", j$(this)).width() +
+                        j$(".arrival-info", j$(this)).width() + plane_icon.width() +
+                        parseInt(plane_icon.css("margin-left")) + parseInt(plane_icon.css("margin-right")));
+                    j$(".airline-info", j$(this)).css("padding-left", (holder_w - w_sub) / 2);
+                });
+
+            });
+        }
+    };
+
+    var bindScheduleLineEvent = function() {
+        j$("#trip-line-schedule").on('click', ".check-more", function(e) {
+            e.preventDefault();
+            j$('#line-schedule').toggleClass('show');
+            var _text = j$(this).text();
+            j$(this).text( _text == "收起" ? "查看全部" : "收起" );
+            handleIECenterAlign();
+        });
+    };
+
+    var renderHotelItem = function(item) {
+        // var address = j$.trim(item.location);
+        // if(!address) {
+        //     address = item.is_new? "添加位置": "位置";
+        // }
+        var right = j$("<a href='###'></a>")
+            .append("<p class='name one-row-ellipsis'>" + item.label + "</p>")
+            .append("<p class='location'><i class='icon'></i><span class='one-row-ellipsis'>" + item.address + "</span></p>");
+        var poiItem = j$("<li class='ui-menu-item'>")
+            .append(right)
+            .data("item", item);
+        // poiItem.attr("poi-id", item.is_new? "new" + item.id: item.id);
+        return poiItem;
+    };
+
+    var bindFlightEvent = function() {
+        var flightPopup = j$("#add-flight-popup");
+
+        var _editFight = function (e) {
+            e.preventDefault();
+            flightPopup.find(".cancel").hide();
+            var _li = j$(this).parents("li");
+            var _iata = _li.attr("data-iata");
+            var _pk = _li.attr("data-id");
+            var _date = _li.attr("data-time");
+            var _new = _li.attr("data-new");
+            var _userDepartureCity = _li.attr("data-user-departure-city");
+            var _userArrivalCity = _li.attr("data-user-arrival-city");
+            flightPopup.find(".delete-part").show();
+            flightPopup.find(".add-flight-operator").val("update");
+            flightPopup.find(".iata").val(_iata);
+            flightPopup.find(".add-flight-pk").val(_pk);
+            flightPopup.find(".date").val(_date);
+            flightPopup.find(".title span").text("修改航班信息");
+            if ( _new === "1" ) { // new flight
+                flightPopup.find(".city-part").show();
+                flightPopup.find("#add-flight-popup-departure-city").val(_userDepartureCity);
+                flightPopup.find("#add-flight-popup-arrival-city").val(_userArrivalCity);
+            }else{
+                flightPopup.find(".city-part").hide();
+            }
+            var trip_id = j$("#trip_id").val();
+            var _url = "/trips/" + trip_id + "/flight/";
+            j$.ajax({
+                url: _url,
+                type: 'GET',
+                dataType: 'json',
+                data: {csrfmiddlewaretoken: j$("#csrf_token").val(), operator: 'flight_info', flight_pk: _pk},
+            })
+            .done(function(data) {
+                if ( data.need_set_stopover ) {
+                    flightPopup.find(".airlines-part").show();
+                    var _arrivalId = _li.attr("data-arrival-city-id");
+                    var _departureId = _li.attr("data-departure-city-id");
+                    var _value = _departureId + "," + _arrivalId;
+                    var _select = flightPopup.find(".airlines-part select");
+                    var _content = "";
+                    j$.each(data.airlines, function(i, val) {
+                        _content += "<option value='"+val.value+"'>"+val.name+"</option>";
+                    });
+                    j$(_select).html(_content).val(_value);
+                }else{
+                    flightPopup.find(".airlines-part").hide();
+                }
+                bt.misc.showPopup(flightPopup);
+            });
+        };
+
+        var _addFight = function (e) {
+            e.preventDefault();
+            flightPopup.find(".city-part, .delete-part, .airlines-part").hide();
+            flightPopup.find(".cancel").show();
+            flightPopup.find(".add-flight-operator").val("create");
+            flightPopup.find(".title span").text("添加航班信息");
+            flightPopup.find("#add-flight-popup-iata").val("");
+            flightPopup.find(".time-part input").val("");
+            flightPopup.find(".confirm").val("确定").removeClass("btn-disable");
+            bt.misc.showPopup(flightPopup);
+        };
+
+        var _submitNewFight = function () {
+            var popup = j$("#add-flight-popup");
+            var trip_id = j$(".content", popup).data("trip-id");
+            var url = "/trips/" + trip_id + "/flight/";
+            var form = j$(this);
+            var content = "";
+            popup.find(".confirm").val("添加中...").addClass("btn-disable");
+            j$.post(url, form.serialize(), function(resp){
+                if (resp.error) {
+                    alert(resp.error);
+                    return;
+                }
+                refreshScheduleLine(trip_id);
+            }).done(function(resp) {
+                bt.misc.hidePopup(j$("#add-flight-popup"));
+                popup.find(".confirm").val("确定").removeClass("btn-disable");
+            }).fail(function() {
+                alert("提交失败，请稍后重试。");
+            });
+            return false;
+        };
+
+        var _deleteFight = function (e) {
+            e.preventDefault();
+            var popup = j$("#add-flight-popup");
+            var trip_id = j$(".content", popup).data("trip-id");
+            var url = "/trips/" + trip_id + "/flight/";
+            var form = j$("#add-flight-form");
+            form.find(".add-flight-operator").val("delete");
+            j$.post(url, form.serialize(), function(resp){
+                if (resp.error) {
+                    alert(resp.error);
+                    return;
+                }
+            }).done(function() {
+                bt.misc.hidePopup(j$("#add-flight-popup"));
+                j$("input.inputbox, input.date", popup).val("");
+                refreshScheduleLine(trip_id);
+            }).fail(function() {
+                alert("删除失败，请稍后重试。");
+            });
+        };
+
+        j$("#trip-line-schedule").on("click", "#add-flight", _addFight);
+
+        j$("#trip-line-schedule").on("click", ".edit-flight-icon", _editFight);
+
+        j$("#add-flight-form").on("submit", _submitNewFight);
+
+        j$("#add-flight-form .delete-part").on("click", _deleteFight);
+
+        flightPopup.find(".cancel").on("click", function(e) {
+            e.preventDefault();
+            bt.misc.hidePopup(flightPopup);
+        });
+    };
+
+    var bindHotelEvent = function () {
+        var new_hotel_index = 0;
+        var hotelPopup = j$("#add-hotel-popup");
+        var ADD_NEW_STR = "_sys_add_new_";
+
+        var _addHotelPopup = function (e) {
+            e.preventDefault();
+            var _firstDay = j$("#trip-info").attr("data-first-date");
+            var _actualDate = new Date(_firstDay); // convert to actual date
+            var _nextDate = new Date(_actualDate.getFullYear(), _actualDate.getMonth(), _actualDate.getDate()+1);
+            j$("#add-hotel-result-item, #add-hotel-delete, #add-hotel-map").hide();
+            j$("#add-hotel-name, #add-hotel-result-item-id, #add-hotel-fee, #add-hotel-check-out").val("");
+            j$("#add-hotel-check-in").val(_firstDay);
+            j$("#add-hotel-check-out").val($.datepicker.formatDate('yy-mm-dd', _nextDate));
+            j$("#id_currency").val("CNY");
+            j$("#add-hotel-cancel").show();
+            hotelPopup.width("328px").find("#add-hotel-name").show().focus();
+            hotelPopup.find("#add-hotel-operator").val("create");
+            bt.misc.showPopup(hotelPopup);
+        };
+
+        var _editHotelPopup = function (e) {
+            e.preventDefault();
+            j$("#add-hotel-map, #add-hotel-name, #add-hotel-cancel").hide();
+            j$("#add-hotel-delete").show();
+            hotelPopup.width("328px");
+            bt.misc.showPopup(hotelPopup);
+            var _li = j$(this).parents("li");
+            var _name = _li.find(".name").text();
+            var _hotel_id = _li.attr("data-hotel-id");
+            var _hotel_pk = _li.attr("data-id");
+            var _address = _li.attr("data-hotel-address") === "" ? "位置" : _li.attr("data-hotel-address");
+            var _lat = _li.attr("data-hotel-lat");
+            var _lng = _li.attr("data-hotel-lng");
+            // console.log("_address: "+_address);
+            var _fee = _li.attr("data-fee");
+            var _is_new = _li.attr("data-hotel-verified");
+            var _checkin = _li.attr("data-checkin");
+            var _checkout = _li.attr("data-checkout");
+            j$("#add-hotel-operator").val("update");
+            j$("#add-hotel-result-item").show().find(".add-hotel-result-item-name").text(_name);
+            j$("#add-hotel-result-item").find(".add-hotel-result-item-address span").text(_address);
+            j$("#add-hotel-result-item-pk").val(_hotel_pk);
+            j$("#add-hotel-result-item-id-f").val(_hotel_id);
+            j$("#add-hotel-fee").val(_fee);
+            j$("#add-hotel-check-in").val(_checkin);
+            j$("#add-hotel-check-out").val(_checkout);
+            j$("#id_currency").val(_li.data("currency"));
+
+            if(_is_new == "False"){
+                j$("#add-hotel-result-item-id-f").val(_hotel_id);
+            } else {
+                j$("#add-hotel-result-item-id").val(_hotel_id);
+            }
+            var _item = {
+                id: new_hotel_index ++,
+                value: _name,
+                label: _name,
+                location: {lat:_lat, lng:_lng},
+                is_new: _is_new
+            };
+            currentHotel = $("#add-hotel-result-item");
+            currentHotel.data("item", _item).attr("data-new", true);
+        };
+
+        var _addNewHotel = function (e) {
+            e.preventDefault();
+            var _name = j$("#add-hotel-name").val();
+            var _csrf = j$("#csrf_token").attr("data-csrf");
+            j$.ajax({
+                url: '/hotel/add_poi/',
+                type: 'POST',
+                dataType: 'json',
+                data: {csrfmiddlewaretoken: _csrf, name: _name}
+            })
+            .done(function(data) {
+                // console.log(data);
+                if ( data.error === null ) {
+                    j$("#add-hotel-result-item-id-f").val(data.poi.pk);
+                    // console.log("pk: "+data.poi.pk);
+                }else{
+                    alert(data.error);
+                }
+            })
+            .fail(function() {
+                // console.log("error");
+            });
+
+            j$("#add-hotel-name").hide();
+            currentHotel = j$("#add-hotel-result-item");
+            currentHotel.attr("data-new", true).show()
+                        .find(".add-hotel-result-item-name")
+                        .text( _name );
+            var item = {
+                id: new_hotel_index ++,
+                value: _name,
+                label: _name,
+                location: "",
+                is_new: true
+            };
+            currentHotel.data("item", item).find(".add-hotel-result-item-address span").text("添加位置");
+            hotelPopup.find("input.name").autocomplete("close");
+
+            j$("#add-hotel-result-item-id-f").val(currentHotel.data("item").value);
+            currentHotel.trigger("click");
+        };
+
+        var _submitNewHotel = function (e) {
+            e.preventDefault();
+            var url = j$(this).attr("action");
+            var data = j$(this).serialize();
+            jQuery.ajax({
+                url: url,
+                type: 'POST',
+                dataType: 'json',
+                data: data,
+                complete: function(xhr, textStatus) {
+                },
+                success: function(data, textStatus, xhr) {
+                    if ( data.error === null ) {
+                        refreshScheduleLine(j$("#trip_id").val());
+                        bt.misc.hidePopup(j$("#add-hotel-popup"));
+                    }else{
+                        alert(data.error);
+                    }
+                },
+                error: function(xhr, textStatus, errorThrown) {
+                    // console.log("error");
+                }
+            });
+        };
+
+        var _addHotelResultItem = function (e) {
+            e.preventDefault();
+            // Only new POI is editable
+            popupMap.bteditable = currentHotel.attr("data-new") || false;
+
+            if ( hotelPopup.find(".add-hotel-map").css("display") == "none" ) {
+                hotelPopup.css({"width": "790px", "height": "auto"});
+                hotelPopup.animate({left: hotelPopup.offset().left - 230}, function () {
+                    hotelPopup.find(".add-hotel-map").fadeIn(function () {
+                        bt.gmap.refreshMap(popupMap);
+                        var info = currentHotel.data("item")["location"] || false;
+                        var address = j$("#add-hotel-result-item")
+                                      .find(".add-hotel-result-item-name").text();
+                        j$("#add-hotel-map-search").find("input").focus();
+                        if(!popupMap.bteditable) {
+                            j$("#add-hotel-map-search, #add-hotel-map-btn").hide();
+                        }else{
+                            j$("#add-hotel-map-search, #add-hotel-map-btn").show();
+                        }
+                        if(info.lat && info.lng) {
+                            bt.gmap.setZoom(popupMap, 13);
+                            bt.gmap.panTo(popupMap, info.lat, info.lng);
+                            _addMarker(info.lat, info.lng, popupMap, currentHotel, _saveCurrentHotel);
+                        } else {
+                            if(j$.trim(address)) {
+                                marker = null;
+                                bt.gmap.zoomToWorld(popupMap);
+                                bt.gmap.searchAddress(popupMap, address, function(result) {
+                                    if(!popupMap.bteditable) {
+                                        return;
+                                    }
+                                    var latLng= result[0].geometry.location;
+                                    _addMarker(latLng.lat(), latLng.lng(), popupMap, currentHotel, _saveCurrentHotel);
+                                });
+                            }
+                        }
+                    });
+                });
+            }
+        };
+
+        var _searchAddress = function() {
+            j$("#add-hotel-map-search input").blur();
+            var address = j$("#add-hotel-map-search").find("input").val();
+            if(j$.trim(address)) {
+                bt.gmap.searchAddress(popupMap, address, function(result) {
+                    if(!popupMap.bteditable) {
+                        return;
+                    }
+                    var latLng = result[0].geometry.location;
+                    _addMarker(latLng.lat(), latLng.lng(), popupMap, currentHotel, _saveCurrentHotel);
+                });
+            }
+        };
+
+        var _saveCurrentHotel = function() {
+            _hideAddHotelMap();
+        };
+
+        var _hideAddHotelMap = function () {
+            j$("#add-hotel-map").hide();
+            j$("#add-hotel-popup").css("width", '328px')
+                                  .animate({left: j$("#add-hotel-popup").offset().left + 230});
+        };
+
+        var _initAddHotelPopupMapEvent = function () {
+            if(!google) {
+                return;
+            }
+            var myOptions = {
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            };
+            popupMap = bt.gmap.createMap("add-hotel-map-area", myOptions);
+            bt.gmap.addListener(popupMap, 'click', function(event) {
+                if(!popupMap.bteditable) {
+                    return;
+                }
+                _addMarker(event.latLng.lat(), event.latLng.lng(),
+                    popupMap, currentHotel, _saveCurrentHotel);
+            });
+        };
+
+        var _addMarker = function(lat, lng, _map, target, saveCallback) {
+            if(marker) {
+                marker.setMap(null);
+                marker = null;
+            }
+            marker = bt.gmap.addMarker(_map, lat, lng);
+            _refreshHotelLocation(_map, target, saveCallback);
+            if(_map.bteditable) {
+                bt.gmap.addListener(marker, 'dragend', function() {
+                    _refreshHotelLocation(_map, target, saveCallback);
+                });
+            } else {
+                bt.gmap.setOptions(marker, {"draggable": false});
+            }
+        };
+
+        var _refreshHotelLocation = function(_map, target, saveCallback) {
+            if(!_map.bteditable) {
+                return;
+            }
+            var latLng = marker.getPosition();
+            target.data("status", "get_geo");
+            bt.gmap.convertCoordinateToGeo(latLng.lat(), latLng.lng(),
+                function(country_code, country, province, city) {
+                    var text = ""
+                        + jQuery.map([city, province, country],
+                                   function(x) {
+                                       return x? x: null;
+                                   }).join(", ");
+                    text = j$.trim(text)? text: "位置";
+                    target.find(".add-hotel-result-item-address span").html(text);
+                    j$("#add-hotel-mask").hide();
+                    j$("#add-hotel-map-btn").find(".btn").removeClass("btn-disable");
+                    j$("#add-hotel-result-item-lat").val( latLng.lat() );
+                    j$("#add-hotel-result-item-lng").val( latLng.lng() );
+                }
+            );
+        };
+
+        j$("#trip-line-schedule").on("click", "#add-hotel", _addHotelPopup);
+
+        j$("#trip-line-schedule").on("click", ".edit-hotel-icon", _editHotelPopup);
+
+        hotelPopup.find("input.name").autocomplete({
+            // delay: 500,
+            appendTo: "#add-hotel-popup .auto-complete",
+            //source: 'new/hotel_demo.json',
+            source: '/hotel/autocomplete/',
+            response: function (e, ui) {
+                ui.content.push({
+                    label: ADD_NEW_STR,
+                    value: ADD_NEW_STR
+                    });
+            },
+            open: function(e, ui) {
+                hotelPopup.height("386px").find(".auto-complete").height("200px").show();
+
+                hotelPopup.find(".add-hotel-new > li").clone()
+                    .appendTo(j$(this).autocomplete("widget"))
+                    .find("a").attr("id", "add-hotel-new-add");
+                hotelPopup.find(".ui-autocomplete span").text(
+                    j$("#add-hotel-name").val());
+            },
+            select: function (e, ui) {
+                j$("#add-hotel-name").hide();
+                j$("#add-hotel-result-item").show().find(".add-hotel-result-item-name").text(ui.item.value);
+                j$("#add-hotel-result-item").find(".add-hotel-result-item-address span").text(ui.item.address);
+                currentHotel = j$("#add-hotel-result-item");
+                currentHotel.data("item", ui.item);
+                j$("#add-hotel-result-item-id").val(ui.item.id);
+                // console.log(ui.item.id);
+            },
+            close: function(e, ui) {
+                hotelPopup.find(".auto-complete").height("-=20").hide();
+                // j$("#add-hotel-operator").val("update");
+                // j$("#add-hotel-name, #add-hotel-result-item-id, #add-hotel-fee, #add-hotel-check-in, #add-hotel-check-out").val("");
+                // hotelPopup.find(".ui-autocomplete").show();
+            }
+        }).data("autocomplete")._renderItem = function(ul, item) {
+            if(item.label == ADD_NEW_STR) {
+                return j$("<li class='hidden'></li>");
+            }
+            var poiItem = renderHotelItem(item).appendTo(ul);
+
+            return poiItem;
+        };
+
+        hotelPopup.on("click", "#add-hotel-new-add", _addNewHotel);
+
+        j$("#add-hotel-check-in").datepicker({
+            yearRange: "-20:+0",
+            changeYear: true,
+            onClose: function( selectedDate ) {
+                j$("#add-hotel-check-out").datepicker( "option", "minDate", selectedDate );
+            }
+        });
+
+        j$("#add-hotel-check-out").datepicker({
+            yearRange: "-20:+0",
+            changeYear: true,
+            onClose: function( selectedDate ) {
+                j$("#add-hotel-check-in").datepicker( "option", "maxDate", selectedDate );
+            }
+        });
+
+        j$("#add-hotel-confirm").on("click", function(e) {
+            e.preventDefault();
+            j$("#add-hotel-form").trigger("submit");
+        });
+
+        j$("#add-hotel-cancel").on("click", function(e) {
+            e.preventDefault();
+            bt.misc.hidePopup(j$("#add-hotel-popup"));
+        });
+
+        j$("#add-hotel-form").on("submit", _submitNewHotel);
+
+        bt.gmap.initMapScript(_initAddHotelPopupMapEvent);
+        j$("#add-hotel-result-item").on("click", _addHotelResultItem);
+
+        j$("#add-hotel-map-search").find("input").on("keydown", function(e) {
+            // _searchAddress();
+            if ( e.which === 13 ) {
+                _searchAddress();
+                e.preventDefault();
+            }
+            // j$("#add-hotel-map-search").find("a").trigger("click");
+            // e.preventDefault();
+        });
+
+        j$("#add-hotel-map-search").on("click", "a", function(e) {
+            e.preventDefault();
+            _searchAddress();
+        });
+
+        j$("#add-hotel-map-btn-save").on("click", function(e) {
+            e.preventDefault();
+            if ( j$(this).hasClass("btn-disable") ) {
+                alert("请在地图上选择位置");
+            }else{
+                _saveCurrentHotel();
+            }
+        });
+
+        j$("#add-hotel-map-btn-cancel").on("click", function(e) {
+            e.preventDefault();
+            _hideAddHotelMap();
+        });
+
+        j$("#add-hotel-delete").on("click", function(e) {
+            e.preventDefault();
+            if ( confirm("真的要删除这个住宿信息么？") ) {
+                j$("#add-hotel-operator").val("delete");
+                j$("#add-hotel-form").trigger("submit");
+            }
+        });
+    };
+
+    var scrollingNav = function () {
+        var windscroll = j$(window).scrollTop();
+        var _Nav = j$('.scroll-nav');
+        var _commentTop = j$('#comment').offset().top;
+        if ( windscroll >= 500 + _Landing ) {
+            j$("#scroll-top").show();
+        }else{
+            j$("#scroll-top").hide();
+        }
+        if (windscroll >= 130 + _Landing ) {
+            _Nav.removeClass('scroll-nav-bottom');
+            _Nav.addClass('scroll-nav-fixed');
+            j$('.trip-tools').addClass('trip-tools-fixed');
+            if ( ( windscroll + _Nav.height() + 95 ) > _commentTop ) {
+                _Nav.removeClass('scroll-nav-fixed');
+                _Nav.addClass('scroll-nav-bottom');
+            }
+        } else {
+            _Nav.removeClass('scroll-nav-fixed');
+            j$('.trip-tools').removeClass('trip-tools-fixed');
+            _Nav.find('li.active').removeClass('active');
+            _Nav.find('li:first').addClass('active');
+        }
+    };
+
+    var BreakNav = function () {
+        var _li = j$('.scroll-nav').find('li');
+        var _length = _li.length;
+        var _index = j$('.scroll-nav li.active').index();
+        var _breakt = j$('#break-top');
+        var _breakb = j$('#break-bottom');
+
+        var _TopBreakAanchor = function () {
+            var _TargetTopNum = _breakt.index();
+            var _TargetBottomNum = _index - 4;
+            var _TargetNum = Math.round( (_TargetBottomNum - _TargetTopNum ) / 2) + 4;
+            var _Target = _li.eq(_TargetNum).find('a').attr('data-scroll');
+            var _TargetDay = _li.eq(_TargetNum).find('a').attr('title');
+
+            // console.log('_index: '+_index+', _breakt: '+_breakt.index()+', TopNum: '+_TargetTopNum+', BottomNum: '+_TargetBottomNum+', _TargetNum: '+_TargetNum);
+
+            _breakt.attr({
+                'data-scroll': _Target,
+                'title': _TargetDay,
+                'href': _Target
+            });
+        };
+
+        var _BottomBreakAanchor = function () {
+            var _TargetTopNum = _index + 4;
+            var _TargetBottomNum = _breakb.index();
+            var _TargetNum = Math.round( (_TargetBottomNum - _TargetTopNum ) / 2) + _index + 4;
+            var _Target = _li.eq(_TargetNum).find('a').attr('data-scroll');
+            var _TargetDay = _li.eq(_TargetNum).find('a').attr('title');
+
+            _breakb.attr({
+                'data-scroll': _Target,
+                'title': _TargetDay,
+                'href': _Target
+            });
+        };
+
+        if ( _length > 16 ) {
+            _TopBreakAanchor();
+            _BottomBreakAanchor();
+            if ( _index <= 9 ) {
+                _li.removeClass('hidden');
+                _breakt.addClass('break-hidden');
+                _breakb.removeClass('break-hidden');
+                _li.slice(12, -3).addClass('hidden');
+            }
+            else if ( 9 < _index && _index <= _length - 9 ) {
+                _li.removeClass('hidden');
+                _breakt.removeClass('break-hidden');
+                _breakb.removeClass('break-hidden');
+                _li.slice(4, (_index - 4)).addClass('hidden');
+                _li.slice((_index + 3), -3).addClass('hidden');
+
+            }
+            else if ( _length <= _index + 9 ) {
+                _li.removeClass('hidden');
+                _breakt.removeClass('break-hidden');
+                _breakb.addClass('break-hidden');
+                _li.slice(3, -12).addClass('hidden');
+            }
+        }
+    };
+
+    var loadTripDynamicData = function() {
+        var url = '/trips/' + j$('#trip_id').attr('value') + '/dynamic_data/';
+        j$.ajax({
+            type: 'GET',
+            url: url,
+            dataType: 'json',
+            success: function(resp) {
+                j$(".trip-tools-bookmark b").text(resp.recommendations);
+                j$(".trip-tools-comment b").text(resp.comment_count);
+                j$(".trip-tools-share b").text(resp.shared);
+                j$(".trip-pv b").text(resp.pv);
+
+                if(resp.recommended) {
+                    j$(".trip-tools-bookmark").addClass('bookmarked');
+                } else {
+                    j$(".trip-tools-bookmark").removeClass('bookmarked');
+                }
+
+                j$.each(resp.waypoints, function(i, wp) {
+                    var wp_obj = j$("#wp" + wp.wp_id);
+                    bt.misc.refreshCount(wp_obj.find(".comment-btn"), wp.comments);
+                    bt.misc.refreshCount(wp_obj.find(".like-btn"), wp.recommendations);
+                    wp_obj.find(".like-btn").attr('data-time', wp.recommendations);
+                    bt.misc.refreshCount(wp_obj.find(".share-btn"), wp.shared);
+                    if(wp.recommended) {
+                        wp_obj.find(".like-btn").addClass("like-btn-active");
+                    } else {
+                        wp_obj.find(".like-btn").removeClass("like-btn-active");
+                    }
+                });
+            }
+        });
+    };
+
+    var deleteWayPoint = function (e) {
+        e.preventDefault();
+        if(confirm("确定要删除此条吗？") === false)
+            {return false;}
+
+        var trip_item = j$(this).parents("div.waypoint:first");
+        trip_item.css("opacity", 0.3);
+        j$.ajax({
+            url: j$(this).attr("href"),
+            type: "DELETE",
+            success: function(msg){
+                msg = eval(msg);
+                if (msg.error){
+                    alert(msg.error);
+                }else{
+                    trip_item.slideUp("slow", function() {
+                        trip_item.remove();
+                    });
+                }
+            }
+        });
+        return false;
+    };
+
+    var updateNavActive = function (index) {
+        var _Nav = j$(".scroll-nav");
+        _Nav.find("li.active").removeClass("active");
+        _Nav.find("li").eq(index).addClass("active");
+    };
+
+    var watchNavActive = function () {
+        var windscroll = j$(window).scrollTop();
+        var _TripDay = j$(".trip-wps .trip-days");
+
+        if (windscroll >= 130 + _Landing ) {
+            _TripDay.each(function(i) {
+                if (j$(this).position().top <= windscroll - 66) {
+                    updateNavActive(i+1);
+                }
+            });
+        }
+    };
+
+    var scrollToDay = function (e) {
+        e.preventDefault();
+        var _scrollAnchor = j$(this).attr("data-scroll");
+        var _scrollPoint = j$("#" + _scrollAnchor).offset().top - 66;
+        j$("body,html").scrollTop(_scrollPoint);
+        watchNavActive();
+        BreakNav();
+        return false;
+    };
+
+    var initScrollEvents = function () {
+        var _timer;
+        _Landing = 0;
+        if ( j$(".landing-header").length > 0 ) { _Landing = 250;}
+        BreakNav();
+        scrollingNav();
+
+        j$(window).on("scroll", function(e) {
+            scrollingNav();
+            if ( _timer ) clearTimeout(_timer);
+            _timer = setTimeout(function(){
+                watchNavActive();
+                BreakNav();
+            }, 300);
+        });
+
+        j$(".scroll-nav").find("a").on("click", scrollToDay);
+    };
+
+    $(document).ready(function(){
+        j$("#trip-edit-panel").on("click", "a.delete", deleteTrip);
+
+        j$(".trip-tools-bookmark").on("click", bookmarkTrip);
+
+        j$(".trip-tools-comment").on("click", readyToCommentTrip);
+
+        initDatepicker();
+
+        handleIECenterAlign();
+
+        j$("div.item-actions-buttons a.delete,div.item-actions a.delete").on("click", deleteWayPoint);
+
+        // 兼容多浏览器
+        var _body = (window.opera) ? (document.compatMode == "CSS1Compat" ? j$("html") : j$("body")) : j$("html,body");
+        j$("#scroll-top").on("click", function(e) {
+            e.preventDefault();
+            j$(this).hide();
+            _body.animate({"scrollTop": 0}, 100);
+        });
+
+        j$("#scroll-navigator .scroll-bottom").click(function(e) {
+            e.preventDefault();
+            _body.animate({"scrollTop": j$("#footer").offset().top}, 100);
+        });
+
+        j$("img.photo").lazyload({
+            threshold : 1500
+        });
+
+        j$(window).resize(function() {
+        });
+
+        initScrollEvents();
+
+        bt.gmap.initMapScript(initialize);
+    });
+
+    j$(window).load(function() {
+        loadTripDynamicData();
+        refreshScheduleLine(j$("#trip_id").val());
+        loadTripComments();
+
+        handleIECenterAlign();
+        bindScheduleLineEvent();
+        bindFlightEvent();
+        bindHotelEvent();
+    });
+
+    var initDatepicker = function() {
+        j$.datepicker.regional['zh-CN'] = {
+            closeText: '关闭',
+            prevText: '&#x3c;上月',
+            nextText: '下月&#x3e;',
+            currentText: '今天',
+            monthNames: ['一月','二月','三月','四月','五月','六月',
+                '七月','八月','九月','十月','十一月','十二月'],
+            monthNamesShort: ['一','二','三','四','五','六',
+                '七','八','九','十','十一','十二'],
+            dayNames: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],
+            dayNamesShort: ['周日','周一','周二','周三','周四','周五','周六'],
+            dayNamesMin: ['日','一','二','三','四','五','六'],
+            weekHeader: '周',
+            dateFormat: 'yy-mm-dd',
+            firstDay: 1,
+            isRTL: false,
+            showMonthAfterYear: true,
+            yearSuffix: '年'};
+        j$.datepicker.setDefaults($.datepicker.regional['zh-CN']);
+        j$("input.date").datepicker({
+            yearRange: "-20:+0",
+            changeYear: true
+        });
+    };
+
+}});

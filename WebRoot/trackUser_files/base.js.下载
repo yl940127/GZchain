@@ -1,0 +1,490 @@
+// Set csrf
+$.ajaxSetup({ 
+     beforeSend: function(xhr, settings) {
+         function getCookie(name) {
+             var cookieValue = null;
+             if (document.cookie && document.cookie != '') {
+                 var cookies = document.cookie.split(';');
+                 for (var i = 0; i < cookies.length; i++) {
+                     var cookie = jQuery.trim(cookies[i]);
+                     // Does this cookie string begin with the name we want?
+                 if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                     break;
+                 }
+             }
+         }
+         return cookieValue;
+         }
+         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+             // Only send the token to relative URLs i.e. locally.
+             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+         }
+     } 
+});
+
+// Add "maxlength" for textarea elements.
+$(function() {
+    var _textareaMaxlength = function() {
+        var a = $(this);
+        var max = parseInt(a.attr("maxlength"), 0);
+        if(max > 0) {
+            if(a.val().length > max) {
+                a.val(a.val().substr(0, max));
+            }
+        }
+    };
+
+    $("textarea[maxlength]").keydown(_textareaMaxlength);
+    $("textarea[maxlength]").keyup(_textareaMaxlength);
+    $("textarea[maxlength]").blur(_textareaMaxlength);
+});
+
+bt.module({builder: function(bt) {
+    var j$ = jQuery;
+
+    var resizingLeftTimer = null;
+    var RESIZING_DELAY = 100;
+
+    var _validateEmail = function(obj) {
+        var valid = bt.misc.validateEmail(j$(obj).val());
+
+        switch(valid) {
+            case bt.misc.VALIDATE_MSG.WRONG_FORMAT:
+                j$(obj).parents(".text-wrapper").removeClass("valid");
+                j$(obj).parents(".text-wrapper").addClass("invalid");
+                break;
+            case bt.misc.VALIDATE_MSG.NULL:
+                j$(obj).parents(".text-wrapper").removeClass("valid");
+                j$(obj).parents(".text-wrapper").removeClass("invalid");
+                break;
+            case bt.misc.VALIDATE_MSG.OK:
+                j$(obj).parents(".text-wrapper").removeClass("invalid");
+                j$(obj).parents(".text-wrapper").addClass("valid");
+                break;
+        };
+    };
+
+    var _getMessageCount = function () {
+        var _floatAlarm = j$("#float-alarm");
+        j$.ajax({
+            url: '/message_count/',
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                if (data.message_count || data.notification_count) {
+                    if ( data.message_count ) {
+                        _floatAlarm.find('.message').removeClass('hidden').find('span').text(data.message_count);
+                        $('.user-menu .message .new-count').text(data.message_count);
+                    }
+                    if ( data.notification_count ) {
+                        _floatAlarm.find('.notification').removeClass('hidden').find('span').text(data.notification_count);
+                        $('.user-menu .notification .new-count').text(data.notification_count);
+                    }
+                    if ( data.message_count && data.notification_count ) {
+                        _floatAlarm.find('.sep').removeClass('hidden');
+                    }
+                    if ( !_floatAlarm.data('hide') ) {
+                        _floatAlarm.slideDown();
+                    }
+                    _floatAlarm.find('.close').click(function() {
+                        _floatAlarm.slideUp(function() {
+                            j$(this).remove();
+                        });
+                    });
+                }else{
+                    _floatAlarm.remove();
+                }
+            }
+        });
+    };
+
+    var _cloneInviteTextbox = function() {
+        var new_input = j$(".invite-form .text-wrapper").first().clone();
+        new_input.removeClass("invalid");
+        new_input.removeClass("valid");
+        new_input.find("input.email").val("");
+        new_input.find("input.email").blur(function() {
+            _validateEmail(this);
+        });
+        return new_input;
+    };
+
+
+    var _getLeftNewHeight = function() {
+        return j$("body").height() - j$("#header").outerHeight() - j$("#footer").outerHeight();
+    };
+
+    var _resizeLeft = function(height, forceReset) {
+        if(forceReset) {
+            j$("#left").css("min-height", "");
+            height = _getLeftNewHeight();
+        }
+        j$("#left").css("min-height", height);
+    };
+
+    var _initInviteFormEvents = function() {
+        j$(".invite-form input.email").blur(function() {
+            _validateEmail(this);
+        });
+
+        j$(".friend-invite a.add-more").click(function() {
+            var new_input = _cloneInviteTextbox();
+            new_input.appendTo(".friend-invite .email-list");
+            return false;
+        });
+
+        j$(".invite-form").submit(function() {
+            j$(".friend-invite input.email").each(function() {
+                _validateEmail(j$(this));
+            });
+            j$(".friend-invite .info-msg").hide();
+            if(j$(".friend-invite .text-wrapper.invalid").length > 0) {
+                j$(".friend-invite .error-msg").text("请输入正确的邮件地址").show();
+                j$(".friend-invite .text-wrapper.invalid").first()
+                        .find("input.email").focus();
+                return false;
+            }
+            if(j$(".friend-invite .text-wrapper.valid").length < 1) {
+                j$(".friend-invite .error-msg").text("请填写一个邮件地址：").show();
+                j$(".friend-invite .text-wrapper").first()
+                        .find("input.email").focus();
+                return false;
+            }
+
+            j$(".friend-invite .error-msg").text("").hide();
+            
+            j$.ajax({
+                type: "POST",
+                url: j$(this).attr("action"),
+                data: j$(this).serialize(),
+                success: function(resp){
+                    if (resp.error) {
+                        if("Login required." == resp.error) {
+                            j$(location).attr("href", "/accounts/login/");
+                        } else {
+                            j$(".friend-invite .error-msg").text(resp.error).show();
+                        }
+                    } else {
+                        j$(".friend-invite .info-msg").text("发送成功").fadeIn();
+                        var new_input = _cloneInviteTextbox();
+                        j$(".friend-invite .text-wrapper").remove();
+                        new_input.appendTo(".friend-invite .email-list");
+                    }
+                }
+            });
+
+            return false;
+        });
+    };
+
+    var _initLandingHeaderEvents = function() {
+        j$(".landing-header-wrapper .register-btn").click(function() {
+            var overlay = j$(".landing-header-wrapper #landing-overlay");
+            var popup = j$(".landing-header-wrapper .register-panel");
+            popup.fadeIn();
+            overlay.show();
+            overlay.click(function() {
+                popup.fadeOut();
+                overlay.hide();
+            });
+            popup.find(".close").click(function() {
+                popup.fadeOut();
+                overlay.hide();
+            });
+        });
+    };
+
+    var popup_login = function (callback) {
+        j$("#login-popup #login-popup-form-email").off('submit');
+        j$("#login-popup #login-popup-form-phone").off('submit');
+        j$("#login-popup #login-popup-form-email").on('submit', function(e) {
+            e.preventDefault();
+            var error = j$(this).find(".error-msg");
+            j$(this).find(".text").removeClass("error");
+            if ( j$("#login-popup-name").val() == "" ) {
+                j$("#login-popup-name").parent("div").addClass("error");
+                error.text("用户名不能为空");
+                return false;
+            }
+            if ( j$("#login-popup-pwd").val() == "" ) {
+                j$("#login-popup-pwd").parent("div").addClass("error");
+                error.text("密码不能为空");
+                return false;
+            }
+            if ( j$("#login-popup-captcha").val() == "" ) {
+                j$("#login-popup-captcha").parent("div").addClass("error");
+                error.text("验证码不能为空");
+                return false;
+            }
+            j$.ajax({
+                type: "POST",
+                url: j$(this).attr("action"),
+                data: j$(this).serialize(),
+                success: function(resp){
+                    if (resp.success) {
+                        if( callback ){callback();}
+                        setTimeout(function(){
+                            window.location.reload();
+                        }, 150);
+                    } else {
+                        j$("#login-popup #login-popup-form-email .text").addClass("error");
+                        error.text(resp.msg);
+                    }
+                }
+            });
+            return false;
+        });
+        j$("#login-popup #login-popup-form-phone").on('submit', function(e) {
+            e.preventDefault();
+            var error = j$(this).find(".error-msg");
+            j$(this).find(".error").removeClass("error");
+            var phoneNum = j$("#login-popup-phone-num").val(),
+                countryNum = j$('#login-popup-phone-country-num').val();
+            if ( phoneNum == "" ) {
+                j$("#login-popup-phone-num").parent("div").addClass("error");
+                error.text("手机号不能为空");
+                return false;
+            }
+            if ( !/^[0-9]*$/.test(phoneNum) || (countryNum == '86' && !/^[0-9]{11}$/.test(phoneNum) )) {
+                j$("#login-popup-phone-num").parent("div").addClass("error");
+                error.text("请输入正确的手机号码");
+                return false;
+            }
+            if ( j$("#login-popup-phone-pwd").val() == "" ) {
+                j$("#login-popup-phone-pwd").parent("div").addClass("error");
+                error.text("密码不能为空");
+                return false;
+            }
+            j$.ajax({
+                type: "POST",
+                url: j$(this).attr("action"),
+                data: j$(this).serialize(),
+                success: function(resp){
+                    if (resp.success) {
+                        if( callback ){callback();}
+                        setTimeout(function(){
+                            window.location.reload();
+                        }, 150);
+                    } else {
+                        j$("#login-popup #login-popup-form-phone .text").addClass("error");
+                        error.text(resp.msg);
+                    }
+                }
+            });
+            return false;
+        });
+        j$('#login-popup-email .login-popup-switch').click(function(){
+            j$('#login-popup-email').hide();
+            j$('#login-popup-phone').show();
+            refreshCaptchaImage(j$('#login-popup-phone-captcha-img'));
+        });
+        j$('#login-popup-phone .login-popup-switch').click(function(){
+            j$('#login-popup-phone').hide();
+            j$('#login-popup-email').show();
+            refreshCaptchaImage(j$('#login-popup-captcha-img'));
+        });
+
+        var countrySelect = j$('#login-popup-phone .country-num-select'),
+            countrySelectIndex = countrySelect.find('.country-num-index span'),
+            countrySelectContent = countrySelect.find('.country-num-list');
+        j$('#login-popup-phone-country-num').on('click',function(){
+            countrySelect.show();
+        });
+        countrySelectIndex.on('click',function(){
+            if(!j$(this).hasClass('cur')){
+                var index = countrySelectIndex.index(j$(this));
+                countrySelect.find('.country-num-index .cur').removeClass('cur');
+                j$(this).addClass('cur')
+                countrySelectContent.find('.cur').removeClass('cur');
+                countrySelectContent.find('ul').eq(index).addClass('cur');
+            }
+        })
+        countrySelectContent.find('.country-item').on('click',function(){
+            j$('#login-popup-phone-country-num').val(j$(this).attr("data-num"));
+            countrySelect.hide();
+        });
+        countrySelect.on('mouseleave',function(){
+            countrySelect.hide();
+        });
+        $('#login-popup-captcha-img, #login-popup-phone-captcha-img').on('click', function() {
+            refreshCaptchaImage($(this));
+        });
+        var refreshCaptchaImage = function($dom) {
+            $dom.attr('src', '/captcha.jpg?v=' + parseInt(Math.random() * 1000000));
+        };
+    };
+
+    var _initCreateTripSubmit = function(){
+
+        var createTripForm = j$("#create-trip-form"),
+            name = createTripForm.find("#new-trip-name"),
+            captcha = createTripForm.find("#new-trip-captcha"),
+            titleError = createTripForm.find(".title-error"),
+            codeError = createTripForm.find(".code-error"),
+            isSubmiting = false;
+
+        createTripForm.on('submit',function(e){
+            e.preventDefault();
+            if(isSubmiting){
+                return false;
+            }
+            if(j$.trim(name.val()) == "") {
+                titleError.html("请输入游记名称");
+                return false;
+            }else{
+                titleError.html("");
+            }
+            var nameLength = name.val().trim().length;
+            if(nameLength < 2 || nameLength > 50) {
+                titleError.html("游记名称应在 2~50 字符之间哦~");
+                return false;
+            }else{
+                titleError.html("");
+            }
+            if(captcha.length > 0 && j$.trim(captcha.val()) == ""){
+                codeError.html("请输入验证码");
+                return false;
+            }else{
+                codeError.html("");
+            }
+            isSubmiting = true;
+            $.ajax({
+                type: "POST",
+                url: createTripForm.attr("action"),
+                data: createTripForm.serialize(),
+                success: function(resp){
+                    isSubmiting = false;
+                    if (resp.success) {
+                        window.location.href = resp.next_url;
+                    } else {
+                        if(resp.errtype == 1){
+                            titleError.html(resp.msg);
+                        }else{
+                            codeError.html(resp.msg);
+                        }
+                    }
+                },
+                error: function(){
+                    isSubmiting = false;
+                }
+            });
+        });
+
+    };
+
+    j$(document).ready(function() {
+        // NOTE: These lines are used for making the height of white background
+        // of the left part of two-column can fit for the height of the window,
+        // even when the window is resized. But this might envolve issues. This
+        // is NOT necessary, so whild critical problems caused by it, don't
+        // hesitate to remove from here until ...
+        /*
+        j$(window).resize(function(e) {
+            var newHeight = _getLeftNewHeight();
+            
+            if(j$("#left").height() < newHeight) {
+                _resizeLeft(newHeight);
+            } else {
+                if(resizingLeftTimer) {
+                    clearTimeout(resizingLeftTimer);
+                    resizingLeftTimer = null;
+                }
+                resizingLeftTimer = setTimeout(function() {
+                    _resizeLeft(newHeight, true);
+                }, RESIZING_DELAY);
+            }
+        });
+
+        j$(window).resize();
+        */
+        // ... until HERE!
+
+        j$("#header .profile .avatar").hover(
+            function() {
+                j$(this).addClass("hover");
+                j$("#header .user-menu").slideDown("fast");
+            },
+            function() {
+                if (!$("#header .user-menu").hasClass('hover')) {
+                    $("#header .user-menu").hide();
+                    $(this).removeClass('hover');
+                }
+            }
+        );
+
+        j$("#header .user-menu").hover(
+            function() {
+                j$(this).addClass("hover");
+                j$("#header .profile .avatar").addClass("hover");
+                j$(this).show();
+            },
+            function() {
+                $(this).removeClass('hover');
+                if (!$("#header .profile .avatar").hasClass('hover'))
+                    $(this).hide();
+            }
+        );
+
+        _initLandingHeaderEvents();
+
+        _initInviteFormEvents(); 
+
+        j$(".create-trip-btn").click(function() {
+            bt.misc.showPopup(j$("#new-trip-popup"));
+        });
+        _initCreateTripSubmit();
+
+        j$("#new-trip-popup").on("click", "li a", function(e) {
+            e.preventDefault();
+            var _sns_type = j$(this).attr("data-type");
+            var obj = j$(this);
+            bt.sns.requireConnection(_sns_type, function() {
+                j$(window.location).attr("href", obj.attr("href"));
+            });
+        });
+        j$('#new-trip-captcha-img').on("click",function(e){
+            $(this).attr("src", "/captcha.jpg?v=" + parseInt(Math.random() * 1000000));
+        });
+        
+        bt.misc.initInputPlaceholder();
+
+        j$("[class$=-login-btn]").live("click", function(e) {
+            var sns_type = j$(this).data("sns-type");
+            var login_url = j$(this).data("url");
+            bt.sns.login(sns_type, login_url, function() {
+                window.location.reload();
+            });
+            e.preventDefault();
+            return false;
+        });
+
+        j$("#header-login").on('click',function(e) {
+            bt.misc.showPopup(j$("#login-popup"));
+            e.preventDefault();
+        });
+        bt.base.popup_login();
+
+        j$("#web-footer-sns-weixin").hover(function() {
+            j$(this).find("img").animate({
+                'width': '180px',
+                'height': '98px',
+                'left': '-80px',
+                'top': '-100px',
+                'opacity': '1'}, 200);
+        }, function() {
+            j$(this).find("img").animate({
+                'width': '0',
+                'height': '0',
+                'left': '15px',
+                'top': '0',
+                'opacity': '0'}, 200);
+        }).on("click", function(e) {
+            e.preventDefault();
+        });
+
+        _getMessageCount();
+    });
+
+    bt.base.popup_login = popup_login;
+}});

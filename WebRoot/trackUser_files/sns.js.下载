@@ -1,0 +1,131 @@
+
+bt.module({builder: function(bt){
+    var j$ = jQuery;
+    var sns_data;
+    var sns_popup_window;
+    var callback_method;
+    var sns_type_name_mapping = {
+        "sina": "新浪微博",
+        "sina2": "新浪微博",
+        "tencent": "腾讯微博",
+        "renren": "人人网"
+    };
+    var sns_type_url_id_mapping = {
+        "sina": "sina_weibo",
+        "sina2": "sina_weibo",
+        "tencent": "tencent_weibo",
+        "renren": "renren"
+    };
+
+    var configConnection = function(sns_type) {
+        if(callback_method) {
+            callback_method(sns_type);
+            callback_method = null;
+        }
+        bt.misc.hidePopup(j$("#connect-sns-popup"));
+        sns_popup_window && sns_popup_window.close();
+        sns_popup_window = null;
+
+        var popup = j$("#config-sns-popup");
+        popup.removeClass("connect-sns-popup-sina "
+                        + "connect-sns-popup-sina2 "
+                        + "connect-sns-popup-tencent "
+                        + "connect-sns-popup-renren")
+             .addClass("connect-sns-popup-" + sns_type);
+        popup.find("p.info span").text(sns_type_name_mapping[sns_type]);
+
+        url = "/accounts/settings/config_sns/" + sns_type_url_id_mapping[sns_type] + "/";
+        popup.find("form#sns-config").submit(function() {
+            var form = j$(this);
+            j$.ajax({
+                url: url,
+                type: "POST",
+                data: form.serialize(),
+                success: function(resp) {
+                    bt.misc.hidePopup(popup);
+                },
+                error: function(resp) {
+                }
+            });
+            return false;
+        });
+
+        bt.misc.showPopup(j$("#config-sns-popup"));
+    };
+
+    var connect = function(sns_type, opts) {
+        var opts = opts == undefined? {}: opts;
+        if(sns_type == "sina") {
+            sns_type = "sina2";
+        }
+        var default_opts = {
+            callback_method_name: "/accounts/settings/sync_sns/connect_callback/"
+                                + "?callback=bt.sns.configConnection&sns_type="
+                                + sns_type
+        };
+        var callback = opts.callback_method_name? opts.callback_method_name:
+                                          default_opts.callback_method_name;
+        var window_open = opts.window_open != undefined? opts.window_open: true;
+
+        var url = "/accounts/settings/sync_sns/connect_" + sns_type + "/?callback="
+                + escape(callback);
+        if(window_open) {
+            var features = "toolbar=no, location=no, directories=no, "
+                        + "status=no, menubar=no, scrollbars=yes, resizable=no, "
+                        + "copyhistory=yes, width=768, height=590";
+            sns_popup_window = window.open(url, "_blank", features);
+        } else {
+            window.location.href=url;
+        }
+    };
+
+    var requireConnection = function(sns_type, callback) {
+        if (!BT_USER_ID) {
+            bt.misc.redirect_to_login();
+            return false;
+        }
+        checkConnection(function(data){
+            sns_data = data;
+            var connected = data[sns_type];
+            if(!connected) {
+                callback_method = callback;
+                connect(sns_type);
+            } else {
+                eval(callback)(sns_type);
+            }
+        });
+    };
+
+    var checkConnection = function(callback) {
+        var conn_data;
+        $.ajax({
+            dataType: "json",
+            async: false,
+            url: "/accounts/settings/sync_sns/status/?v=2",
+            success: function(data) {
+                conn_data = data;
+            }
+        });
+        eval(callback)(conn_data);
+    };
+
+    var login = function(sns_type, login_url, callback) {
+        if(sns_type == "sina") {
+            sns_type = "sina2";
+        }
+
+        var url = login_url;
+
+        var features = "toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=yes, width=768, height=590";
+        sns_popup_window = window.open(url, "_blank", features);
+    };
+
+    bt.sns.SINA = "sina";
+    bt.sns.TENCENT = "tencent";
+    bt.sns.RENREN = "renren";
+    bt.sns.configConnection = configConnection;
+    bt.sns.connect = connect;
+    bt.sns.requireConnection = requireConnection;
+    bt.sns.checkConnection = checkConnection;
+    bt.sns.login = login;
+}});

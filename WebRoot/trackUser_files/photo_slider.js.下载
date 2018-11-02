@@ -1,0 +1,286 @@
+bt.module({builder: function(bt){
+    var j$ = jQuery;
+
+    var slider = function () {
+        j$("a.fancy-group").fancybox({
+            nextEffect: 'none',
+            prevEffect: 'none',
+            loop : false,
+            scrolling : 'no',
+            margin : [40,130,20,130],
+            beforeLoad: function() {
+                var fancy_time  = j$(this.element).parents('.waypoint').find('.time').text();
+                var fancy_local = j$(this.element).parents('.waypoint').find('.wp-stats .one-row-ellipsis').text();
+                var fancy_title = j$(this.element).parents('#left').find('h2').text();
+
+                if ( this.title !== "" ) {
+                    var _caption = $("<span></span>").text( j$(this.element).data('caption') ).html();
+                    this.title = '<p class="fancybox-text">' + _caption + '</p>';
+                }
+                if ( fancy_local !== "" && fancy_local !== "位置" ) { 
+                    this.title += '<i class="fancybox-location">'+ fancy_local +'</i>';
+                }
+                if ( fancy_time !== "" ) {
+                    this.title += '<i class="fancybox-time">'+ fancy_time +'</i>';
+                }
+                this.title += '<p class="fancybox-btn"></p>';
+            },
+            afterShow : function () {
+                var title      = j$(this.element).parents('#content').find('h2');
+                var likeStatus = j$(this.element).parents('.waypoint').find('.like-btn').hasClass('like-btn-active');
+                var likeBtn    = j$(this.element).parents('.waypoint').find('.like-btn');
+                var likeTime    = likeBtn.attr('data-time');
+                var shareBtn   = j$(this.element).parents('.waypoint').find('.share-btn');
+                var sharePopup = j$('#share-popup');
+                var comPopup   = j$('#comment-popup');
+                var comBtn     = j$(this.element).parents('.waypoint').find('.comment-btn');
+                var comNum     = comBtn.data('num');
+                var positionTop;
+                var trip_id     = j$(this.element).parents('.waypoint').data("trip_id");
+                var waypoint_id = j$(this.element).parents('.waypoint').data("waypoint_id");
+                var fancyBtns  = '<a class="fancybox-like '+ ( likeStatus? 'fancybox-like-active' : '') +'" href="###">喜欢 (<span>'+ likeTime +'</span>)</a><a class="fancybox-com" href="###">评论 (<span>'+ comNum +'</span>)</a><a class="fancybox-share" href="###">分享</a>';
+                comPopup.hide();
+                sharePopup.hide();
+                j$("#overlay").hide();
+                j$(fancyBtns).appendTo(j$('.fancybox-btn'));
+
+                var position = function () {
+                    var windowHeight = document.documentElement.clientHeight;
+                    var fancyBtnsTop = j$(".fancybox-btn").offset().top - $(document).scrollTop();
+                    // console.log("windowHeight: "+windowHeight+", fancyBtnsTop: "+fancyBtnsTop);
+                    positionTop = (windowHeight - fancyBtnsTop + 20) + "px";
+                    // console.log("windowHeight: "+windowHeight+", fancyBtnsTop: "+fancyBtnsTop);
+                };
+
+                var _render_comment = function(comment, url){
+                    url = url.replace("comment", "delete_comment");
+                    var custom_url = comment.user.custom_url;
+                    if (custom_url == '') {
+                        custom_url = 'u/' + comment.user.id;
+                    }
+                    var msg = '' +  
+                    '<li class="fn-clear" data-url="' + url + '" data-comment-id="' + comment.id + '">' +
+                        '<a href="/' + custom_url + '/" title="' + comment.user.name + '" data-user_id="' + comment.user.id + '" class="comment-popup-avatar">' +
+                            '<img src="' + comment.user.avatar_m + '" width="28" height="28" alt="name"><span class="avatar-mask-28"></span>' +
+                        '</a>' +
+                        '<div class="comment-popup-text">' +
+                            '<a href="/' + custom_url + '/" class="comment-popup-name">' + comment.user.name + '</a>' +
+                            '<p>'+ comment.comment +'</p>' +
+                            '<p class="comment-popup-date">' +
+                                '<a class="comment-popup-del"  href="###"">删除</a>' +
+                                '<a class="comment-popup-reply" href="###">回复</a>' + comment.date_added +
+                            '</p>' +
+                        '</div>' +
+                    '</li>';
+                    return msg;
+                };
+
+                var fancyGroup  =  j$(this.element);
+
+                j$('a.fancybox-like').on('click', function (e) {
+                    e.preventDefault();
+                    var self = j$(this);
+                    var fancy_active_class = 'fancybox-like-active';
+                    var active_class = 'like-btn-active';
+                    var recommended = j$(this).hasClass(fancy_active_class);
+                    var temp = fancyGroup.parents('div.waypoint');
+                    var trip_id = temp.data('trip_id');
+                    var waypoint_id = temp.data('waypoint_id');
+                    if (!(trip_id && waypoint_id)) {
+                        return false;
+                    }
+
+                    var url = '/trips/' + trip_id + '/waypoints/' + waypoint_id + '/';
+                    url += recommended?'delete_recommend/':'recommend/';
+                    if (!BT_USER_ID) {
+                        bt.misc.redirect_to_login(function () {
+                            j$.ajax({url: url,dataType: 'json',type: 'POST'});
+                        });
+                        return false;
+                    }
+                    j$.ajax({
+                        url: url,
+                        dataType: 'json',
+                        type: 'POST',
+                        success: function(msg){
+                            var timePlus = parseInt(likeBtn.attr('data-time')) + 1;
+                            var timeReduce = parseInt(likeBtn.attr('data-time')) - 1;
+                            if (msg.error)
+                                alert(msg.error);
+                            else {
+                                if (recommended) {
+                                    self.removeClass(fancy_active_class);
+                                    likeBtn.removeClass(active_class).attr({
+                                        'data-num': '0',
+                                        'data-time': timeReduce
+                                    });
+                                } else {
+                                    self.addClass(fancy_active_class);
+                                    likeBtn.addClass(active_class).attr({
+                                        'data-num': '1',
+                                        'data-time': timePlus
+                                    });
+                                }
+                                bt.misc.modifyCount(self, recommended? -1: 1);
+                                bt.misc.modifyCount(likeBtn, recommended? -1: 1);
+                            }
+                        },
+                        error: function(){
+                            alert("操作失败，请稍候再试");
+                        },
+                        complete: function(){self.removeClass("ajax-loading");}
+                    });
+                    return false;
+                });
+                // Comment Button
+                j$("a.fancybox-com").on("click", function (e) {
+                    e.preventDefault();
+                    if (!BT_USER_ID) {
+                        bt.misc.redirect_to_login();
+                        return false;
+                    }
+                    comPopup.html("");
+                    position();
+                    j$.ajax({
+                        url: '/trips/' + trip_id + '/waypoints/' + waypoint_id + '/popup_replies/',
+                        success: function(html){
+                            comPopup.html("").append(html);
+                            bt.misc.showPopup(comPopup);
+                            comPopup[0].style.bottom = positionTop;
+                            comPopup[0].style.top = "auto";
+                        },
+                        complete: function(){
+                            post_comment();
+                            j$("a.comment-popup-submit").on("click", function (e) {
+                                e.preventDefault();
+                                j$(".comment-popup-form form").trigger("submit");
+                            });
+                        }
+                    });
+                });
+                // Comment Submit Button
+                var post_comment = function () {
+                    j$(".comment-popup-form form").on("submit", function (e) {
+                        var form_comment = null;
+                        form_comment = j$(this);
+
+                        var comment_btn = j$("this");
+                        comment_btn.text('评论中..');
+                        var data = form_comment.serialize();
+                        j$.ajax({
+                            url: form_comment.attr('action'),
+                            type: 'POST',
+                            data: data,
+                            success: function(msg){
+                                msg = eval(msg);
+                                if (msg.error)
+                                    alert(msg.error);
+                                else {
+                                    var comment_html = _render_comment(msg.comment, form_comment.attr('action'));
+                                    var ul_comments = j$('.comment-popup-list');
+                                    var title_comment = form_comment.parents('.content').prev().find('.title');
+                                    bt.misc.modifyCount(title_comment, 1);
+                                    bt.misc.modifyCount(j$("a.fancybox-com"), 1);
+                                    bt.misc.modifyCount(comBtn, 1);
+
+                                    ul_comments.append(comment_html);
+                                    ul_comments.find('li').last().hide().fadeIn(1000);
+                                    ul_comments.scrollTop(ul_comments[0].scrollHeight);
+                                    form_comment.find('input[name="comment"]').val('');
+                                }
+                            },
+                            complete: function(){
+                                comment_btn.text('评论');
+                                form_comment.data('submitting', false);
+                            }
+                        });
+                        e.preventDefault();
+                    });
+                };
+                // Share Button
+                j$("a.fancybox-share").on("click", function (e) {
+                    e.preventDefault();
+                    if (!BT_USER_ID) {
+                        bt.misc.redirect_to_login();
+                        return false;
+                    }
+                    position();
+                    shareBtn.click();
+                    sharePopup.addClass("fancybox-share-popup");
+                    sharePopup[0].style.top = "auto";
+                    sharePopup[0].style.bottom = positionTop;
+                });
+                // reply somebody
+                j$("#comment-popup").on("click", "a.comment-popup-reply", function (e) {
+                    e.preventDefault();
+                    var self = j$(this);
+                    var temp =  self.parents("li").find(".comment-popup-avatar");
+                    var user_id = temp.data("user_id");
+                    var username = temp.attr("title");
+                    var form_reply = self.parents(".comment-popup-list").next();
+                    form_reply.data('user_id', user_id);
+
+                    var comment_input = form_reply.find('input[name="comment"]');
+                    var prefix = '回复' + username + ': ';
+                    comment_input.val(prefix);
+                    comment_input.focus();
+                    var ctrl = comment_input[0];
+                    var pos = prefix.length;
+                    if(ctrl.setSelectionRange) {
+                        ctrl.focus();
+                        ctrl.setSelectionRange(pos, pos);
+                    } else if (ctrl.createTextRange) {
+                        var range = ctrl.createTextRange();
+                        range.collapse(true);
+                        range.moveEnd('character', pos);
+                        range.moveStart('character', pos);
+                        range.select();
+                    }
+                });
+                j$("#comment-popup").on("click", "a.comment-popup-del", function (e) {
+                    e.preventDefault();
+                    var sure = confirm("确定要删除该评论？");
+                    if(!sure) {
+                        return;
+                    }
+                    var comment = j$(this).parents("li");
+                    var comment_id = comment.data("comment-id");
+                    var url = comment.data("url");
+                    j$.ajax({
+                        url: url,
+                        data: {id: comment_id},
+                        type: "POST",
+                        success: function(resp) {
+                            if(resp.error) {
+                                alert(resp.error);
+                            } else {
+                                var wp_comment_btn = comment.parents('.content').prev().find('.title');
+                                bt.misc.modifyCount(wp_comment_btn, -1);
+                                bt.misc.modifyCount(j$("a.fancybox-com"), -1);
+                                comment.slideUp(function() {
+                                    var comment_list = comment.parents('ul.comments');
+                                    comment.remove();
+                                });
+                            }
+                        }
+                    });
+                });
+            },
+            afterClose : function () {
+                j$("#share-popup").removeClass("fancybox-share-popup");
+                var top = j$(this.element).offset().top - 70;
+                j$(document).scrollTop(top);
+            },
+            padding : 0,
+            helpers :  {
+                title : {
+                    type: "inside"
+                }
+            }
+        });
+    };
+
+    j$(document).ready(function($) {
+        slider();
+    });
+}});

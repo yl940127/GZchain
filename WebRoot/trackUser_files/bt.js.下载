@@ -1,0 +1,41 @@
+/*
+ * js/bt.js
+ *
+ * Create the architecture of javascripts.
+ * All javascript var/fun should have a certain same namespace called "bt".
+ *     E.g. bt.gmap.initMap();
+ * The second level ("gmap" in the Example above) should ALWAYS be defined in
+ * this file!
+ */
+var j$ = jQuery;
+
+(function() {
+    var bt = {
+        index: {},
+        explore: {},
+        plan_trip: {},
+        gmap: {},
+        misc: {},
+        trip: {},
+        tripUtils: {},
+        reply: {},
+        user: {},
+        user2013: {},
+        account: {},
+        places: {},
+        mobile: {},
+        sns: {},
+        base: {},
+        log: {},
+        module: function(meta) {
+            meta.builder(bt);
+            return bt;
+        }
+    };
+
+    if(window.bt) {
+        throw new Error("BreadTrip Javascript library has already loaded!");
+    } else {
+        window.bt = bt;
+    }
+})();

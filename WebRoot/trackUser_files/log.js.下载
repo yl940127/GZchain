@@ -1,0 +1,111 @@
+/**
+ * @fileOverview 面包客户端统计组件，统计格式请参考数据组 《客户端日志格式定义》
+ * @author yuguangcan
+ * @date   2015-6-11
+ * @version 1.0
+ **/
+
+bt.module({builder: function(bt) {
+
+    var log = {
+        imageUrl : "http://cli.breadtrip.com/br.png?data=",
+        imageReq : function(url){
+            var n = "btlog_"+ new Date().getTime();
+            //将image对象赋给全局变量，防止被当做垃圾回收，造成请求失败。
+            var c = window[n] =new Image();
+            c.onload=c.onerror=function(){
+                //垃圾回收
+                window[n]=null; 
+            };
+            c.src = url;
+            c=null;//垃圾回收
+        },
+        //公共的请求参数，包括平台、版本、用户id
+        commonOption :[
+            { 
+                key : "platform",
+                value : 3 
+            },
+            { 
+                key : "version",
+                value : '-'
+            },
+            { 
+                key : "uid",
+                value : BT_USER_ID || 'anoy'
+            }
+        ],
+        /*
+        * 模块和页面对应的统计id,只接受这里定义的模块和页面的相关统计
+        * 有扩展时和数据组确认模块页面取值，并在这里添加
+        */
+        moduleOption : {
+            module : {
+                trip : 1,
+                waypoint : 2,
+                place : 3,
+                poi : 5,
+                product : 6,
+                user : 7
+            },
+            page : {
+                trip : 1002,
+                waypoint : 2002
+            }
+        },
+        commonHeader : function(){
+            var data = [];
+            for(var i=0;i<this.commonOption.length;i++){
+                var option = this.commonOption[i];
+                data.push(option.value);
+            }
+            return data.join(";");
+        },
+        moduleHeader : function(options){
+            var data = [
+                new Date().getTime(),
+                this.moduleOption.module[options.module] || "-" ,
+                this.moduleOption.page[options.page] || "-" 
+            ]
+            return data.join(";") + ":" + ( options.pageValue || "-" );
+        }
+    }
+    /**
+     * @name log
+     * @function
+     * @description   发送统计请求 
+     * @param {Object} {key:value}  统计项数据结构
+     * @example
+     * BT.log.log([
+     *  {
+     *    module : "trip",
+     *    page : "trip",
+     *    pageValue : '123',
+     *    data : "1001:3000"
+     *  },
+     *  {
+     *    module : "trip",
+     *    page : "trip",
+     *    pageValue : '123',
+     *    data : "1001:3000"
+     *  },
+     * ])
+     **/
+    function sendLog(options){
+        var data = [];
+        if(Object.prototype.toString.call(options) === '[object Array]'){
+            data = options;
+        }else{
+            data.push(options);
+        }
+        var logData =  log.commonHeader() + ">>>";
+        for(var i =0;i<data.length;i++){
+            if(i>0){
+                logData += "###";
+            }
+            logData += log.moduleHeader(data[i])  + "@@@" + data[i].data;
+        }
+        log.imageReq(log.imageUrl + encodeURIComponent(logData));
+    }
+    bt.log.log = sendLog;
+}});

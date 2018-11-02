@@ -1,0 +1,127 @@
+
+.reply-wrapper {
+    border-left: 1px solid #eaeaea;
+    border-right: 1px solid #eaeaea;
+    background-color: #FFF;
+}
+.reply-wrapper div.like {
+    padding: 12px 8px 6px 18px;
+    border-bottom: 1px solid #eaeaea;
+}
+.reply-wrapper .empty-like-title,
+.reply-wrapper .like-title {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 4px;
+}
+
+.reply-wrapper .like-avatars {
+    display: block;
+    max-height: 43px;
+    overflow: hidden;
+}
+
+.reply-wrapper .like-avatars li {
+    display: block;
+    float: left;
+}
+.reply-wrapper .like-avatars .avatar-wrapper {
+    position: relative;
+    margin: 4px 8px 4px 0;
+}
+.reply-wrapper .comments .avatar-wrapper {
+    position: relative;
+    margin: 6px;
+}
+.reply-wrapper .avatar-mask-28 {
+    background: url("/static/img/avatar_masks.png?v=20120906") no-repeat 0px -278px;
+    height: 28px;
+    left: 0px;
+    position: absolute;
+    top: 0px;
+    width: 28px;
+}
+.reply-wrapper .comments li {
+    clear: both;
+}
+.reply-wrapper .comments li.underline {
+    border-bottom: 1px solid #eaeaea;
+}
+.reply-wrapper .comments p,.reply-wrapper .comments a {
+    font-size: 12px;
+    line-height: 20px;
+}
+.reply-wrapper .comments .comment-text {
+    overflow-x: hidden;
+    padding: 10px 6px 14px;
+    width: 388px;
+}
+.reply-wrapper .comments .btn-comment {
+    width: 400px;
+}
+.reply-wrapper .comments a.btn-delete,
+.reply-wrapper .comments a.btn-reply {
+    font-size: 12px;
+    line-height: 42px;
+    margin-left: 20px;
+    text-decoration: none;
+    _margin-left: 10px;
+}
+.reply-wrapper .comments a.btn-delete:hover,
+.reply-wrapper .comments a.btn-reply:hover {
+    color: #2e9dab;
+}
+.reply-wrapper .comments-wrapper {
+    padding: 12px 18px 6px 18px;;
+}
+.reply-wrapper .comment {
+    margin: 6px 0;
+}
+.reply-wrapper .comment .text-comment {
+    background-color: #eaeaea;
+    border: none;
+    font-size: 14px;
+    height: 28px;
+    line-height: 28px;
+    margin-right: 14px;
+    padding-left: 10px;
+    width: 430px;
+}
+.reply-wrapper .comment .btn-comment {
+    background-color: #4abdcc;
+    cursor: pointer;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    width: 70px;
+    color: #fff;
+}
+
+.comment-border {
+    _width: 100%;
+    _background: #eaeaea;
+    _font-size: 1px;
+    _height: 1px;
+}
+.comment-border-left {
+    background: url("/static/img/trip_detail_icons.png") no-repeat -103px -7px;
+    float: left;
+    height: 5px;
+    width: 7px;
+    _display: none;
+}
+.comment-border-middle {
+    float: left;
+    border-bottom: 1px solid #eaeaea;
+    height: 4px;
+    width: 626px;
+    _display: none;
+}
+.comment-border-right {
+    background: url("/static/img/trip_detail_icons.png") no-repeat -124px -7px;
+    float: right;
+    height: 5px;
+    width: 7px;
+    _display: none;
+}
+

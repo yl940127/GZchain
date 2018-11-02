@@ -1,0 +1,358 @@
+var google;
+
+bt.module({builder: function(bt) {
+    var j$ = jQuery;
+    var geocoder;
+    var scriptLoaded = 0; //0: not loaded; 1: loading; 2: loaded
+    var _callbacks = [];
+
+    var addListener = function(obj, eventType, handler) {
+        if(!google) {
+            return;
+        }
+        google.maps.event.addListener(obj, eventType, handler);
+    };
+
+    var createMap = function(objId, opts) {
+        if(!google) {
+            return;
+        }
+        var map = new google.maps.Map(document.getElementById(objId), opts);
+        return map;
+    };
+
+    var createMarker = function(opts) {
+        if(!google) {
+            return;
+        }
+        if(!opts.icon) {
+            opts.icon = 'http://breadtripimages.qiniudn.com/covers_2014_07_31_4ba6bcaf386a99ade58c34c09d6d26ed.png?';
+        }
+        var marker = new google.maps.Marker(opts);
+        return marker;
+    };
+
+    var createInfoWindow = function(opts) {
+        return new google.maps.InfoWindow(opts);
+    };
+
+    var createLatLng = function(lat, lng) {
+        return new google.maps.LatLng(lat, lng);
+    };
+
+    var createPolyline = function(opts) {
+        return new google.maps.Polyline(opts);
+    };
+
+    var createPolygon = function(opts) {
+        return new google.maps.Polygon(opts);
+    };
+
+    var createLatLngBounds = function(opts) {
+        return new google.maps.LatLngBounds(opts);
+    };
+
+    var getGeocoder = function() {
+        if(!geocoder) {
+            /*
+             * Temp remove gmap dependency
+             *
+            geocoder = new google.maps.Geocoder();
+             */
+        }
+        return geocoder;
+    };
+
+    var initMapScriptCallback = function() {
+        if(scriptLoaded == 0 || scriptLoaded == 1) {
+            scriptLoaded = 2;
+        }
+        while(_callbacks.length > 0) {
+            _callbacks.pop()();
+        }
+    };
+
+    var initMapScript = function(callback) {
+        if(callback) {
+            _callbacks.push(callback);
+        }
+        /*
+         * Temp remove gmap dependency
+         * Call callbacks after 3 seconds
+         */
+        setTimeout("bt.gmap.initMapScriptCallback()", 10000);
+
+        if(scriptLoaded == 1) {
+            setTimeout(function() {
+                bt.gmap.initMapScript();
+            }, 500);
+            return;
+        }
+        if(scriptLoaded == 0) {
+            scriptLoaded = 1;
+        }
+        if(scriptLoaded == 2) {
+            initMapScriptCallback();
+            return;
+        }
+        var script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = MAP_URL + "&callback=bt.gmap.initMapScriptCallback";
+        document.body.appendChild(script);
+    };
+
+    var zoomToWorld = function(map) {
+        if(!google) {
+            return;
+        }
+        var latlngbounds = new google.maps.LatLngBounds();
+        latlngbounds.extend(new google.maps.LatLng(70, 150));
+        latlngbounds.extend(new google.maps.LatLng(-20, -210));
+        map.fitBounds(latlngbounds);
+    };
+
+    var zoomToChina = function(map) {
+        if(!google) {
+            return;
+        }
+        var latlngbounds = new google.maps.LatLngBounds();
+        latlngbounds.extend(new google.maps.LatLng(60, 120));
+        latlngbounds.extend(new google.maps.LatLng(10, 80));
+        map.fitBounds(latlngbounds);
+    };
+
+    var refreshMap = function(map) {
+        if(!google) {
+            return;
+        }
+        google.maps.event.trigger(map, 'resize') ;
+    };
+
+    var searchAddress = function(map, address, success) {
+        /*
+         * Temp remove gmap dependency
+         *
+        getGeocoder().geocode( { 'address': address}, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK) {
+                map.setCenter(results[0].geometry.location);
+                if (map.getZoom() < 12) {
+                    map.setZoom(12);
+                }
+                if(success) {
+                    success(results);
+                }
+            } else {
+                alert("未找到相关位置，修改搜索条件再试试？");
+            }
+        });
+         */
+        // gmapIP = "54.179.144.114";
+        url = "http://" + GMAPS_API_DOMAIN + "/maps/api/geocode/json?language=zh-CN&address=" + address;
+        j$.ajax({
+            url: url,
+            type: "get",
+            dataType: "json",
+            crossDomain: true,
+            success: function(resp) {
+                if(resp.status == google.maps.GeocoderStatus.OK) {
+                    var results = resp.results;
+                    var loc = results[0].geometry.location;
+                    results[0].geometry.location = createLatLng(loc.lat, loc.lng);
+                    map.setCenter(results[0].geometry.location);
+                    if (map.getZoom() < 12) {
+                        map.setZoom(12);
+                    }
+                    if(success) {
+                        success(results);
+                    }
+                } else {
+                    alert("未找到相关位置，修改搜索条件再试试？");
+                }
+            }
+        });
+    };
+
+    var addMarker = function(map, lat, lng) {
+        if(!google) {
+            return;
+        }
+        var _marker = createMarker({
+            draggable: true,
+            animation: google.maps.Animation.DROP,
+            position: new google.maps.LatLng(lat, lng),
+            map: map
+        });
+
+        return _marker;
+    };
+
+    var setMarkerPosition = function(marker, lat, lng) {
+        marker.setPosition(createLatLng(lat, lng));
+    };
+
+    var convertCoordinateToGeo = function(lat, lng, callback) {
+        if(!google) {
+            return;
+        }
+        /*
+         * Temp remove gmap dependency
+         *
+        var latlng = new google.maps.LatLng(lat, lng);
+        getGeocoder().geocode({'latLng': latlng}, function(results, status) {
+            var country_code, country, province, city;
+            if (status == google.maps.GeocoderStatus.OK) {
+                if (results[0] && results[0].address_components) {
+                    for (var i in results[0].address_components) {
+                        if(!results[0].address_components[i].types) {
+                            continue;
+                        }
+                        if ($.inArray('country',
+                                results[0].address_components[i].types) >= 0) {
+                            country_code = results[0]
+                                    .address_components[i]
+                                    .short_name;
+                            country = results[0]
+                                    .address_components[i]
+                                    .long_name;
+                        } else if ($.inArray('administrative_area_level_1',
+                                results[0].address_components[i].types) >= 0) {
+                            province = results[0]
+                                    .address_components[i]
+                                    .long_name;
+                        } else if (!province && $.inArray('administrative_area_level_2',
+                                results[0].address_components[i].types) >= 0) {
+                            province = results[0]
+                                    .address_components[i]
+                                    .long_name;
+                        } else if ($.inArray('locality',
+                                results[0].address_components[i].types) >= 0) {
+                            city = results[0]
+                                  .address_components[i]
+                                  .long_name;
+                        }
+                    }
+                }
+            }
+            callback(country_code, country, province, city);
+        });
+         */
+
+        // gmapIP = "54.179.144.114";
+        url = "http://" + GMAPS_API_DOMAIN + "/maps/api/geocode/json?language=zh-CN&latlng=" + lat + "," + lng;
+        j$.ajax({
+            url: url,
+            type: "get",
+            dataType: "json",
+            success: function(resp) {
+                var country_code, country, province, city;
+                if(resp.status == google.maps.GeocoderStatus.OK) {
+                    var results = resp.results;
+                    if (results[0] && results[0].address_components) {
+                        for (var i in results[0].address_components) {
+                            if(!results[0].address_components[i].types) {
+                                continue;
+                            }
+                            if ($.inArray('country',
+                                    results[0].address_components[i].types) >= 0) {
+                                country_code = results[0]
+                                        .address_components[i]
+                                        .short_name;
+                                country = results[0]
+                                        .address_components[i]
+                                        .long_name;
+                            } else if ($.inArray('administrative_area_level_1',
+                                    results[0].address_components[i].types) >= 0) {
+                                province = results[0]
+                                        .address_components[i]
+                                        .long_name;
+                            } else if (!province && $.inArray('administrative_area_level_2',
+                                    results[0].address_components[i].types) >= 0) {
+                                province = results[0]
+                                        .address_components[i]
+                                        .long_name;
+                            } else if ($.inArray('locality',
+                                    results[0].address_components[i].types) >= 0) {
+                                city = results[0]
+                                      .address_components[i]
+                                      .long_name;
+                            }
+                        }
+                    }
+                }
+                callback(country_code, country, province, city);
+            }
+        });
+    };
+
+    var panTo = function(map, lat, lng) {
+        if(!google || !map) {
+            return;
+        }
+        map.panTo(new google.maps.LatLng(lat, lng));
+    };
+
+    var panToBounds = function(map, bounds) {
+        if(!google || !map) {
+            return;
+        }
+        map.panToBounds(bounds);
+    };
+
+    var setZoom = function(map, zoom) {
+        if(!google || !map) {
+            return;
+        }
+        map.setZoom(zoom);
+    };
+
+    var setOptions = function(map, options) {
+        return map.setOptions(options);
+    };
+
+    var getBounds = function(map) {
+        return map.getBounds();
+    };
+
+    var getZoom = function(map) {
+        return map.getZoom();
+    };
+
+    var setCenter = function(map, lat, lng) {
+        if(!google) {
+            return;
+        }
+        map.setCenter(new google.maps.LatLng(lat, lng));
+    };
+
+    var closePOIInfowindow = function() {
+        // HACK: this is google map v3's issue.
+        var poiInfoCloseIcon = j$('[src*="/mapfiles/mv/imgs8.png"]').parent()[0];
+        poiInfoCloseIcon.click();
+    };
+
+    bt.gmap.createMap = createMap;
+    bt.gmap.createMarker = createMarker;
+    bt.gmap.createInfoWindow = createInfoWindow;
+    bt.gmap.createLatLng = createLatLng;
+    bt.gmap.createPolyline = createPolyline;
+    bt.gmap.createPolygon = createPolygon;
+    bt.gmap.createLatLngBounds = createLatLngBounds;
+    bt.gmap.addListener = addListener;
+    bt.gmap.initMapScript = initMapScript;
+    bt.gmap.initMapScriptCallback = initMapScriptCallback;
+    bt.gmap.zoomToWorld = zoomToWorld;
+    bt.gmap.zoomToChina = zoomToChina;
+    bt.gmap.refreshMap = refreshMap;
+    bt.gmap.searchAddress = searchAddress;
+    bt.gmap.addMarker = addMarker;
+    bt.gmap.setMarkerPosition = setMarkerPosition;
+    bt.gmap.convertCoordinateToGeo = convertCoordinateToGeo;
+    bt.gmap.panTo = panTo;
+    bt.gmap.panToBounds = panToBounds;
+    bt.gmap.setZoom = setZoom;
+    bt.gmap.setOptions = setOptions;
+    bt.gmap.getBounds = getBounds;
+    bt.gmap.getZoom = getZoom ;
+    bt.gmap.setCenter = setCenter;
+    bt.gmap.closePOIInfowindow = closePOIInfowindow;
+}});

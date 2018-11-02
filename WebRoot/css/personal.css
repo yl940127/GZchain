@@ -1,0 +1,37 @@
+body {
+    background: #fff;
+}
+
+.list-group {
+    margin-bottom: 20px;
+}
+
+.item-head {
+    border-bottom: 1px #f5f5f5 solid;
+    margin-bottom: 10px; 
+}
+
+.item-heading {
+    margin-bottom: 20px;
+    margin-top: 0;
+}
+
+.input label {
+    display: block;
+    margin-top: 20px;
+}
+
+.img {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+#img-personal {
+    width: 180px;
+    height: 180px;
+    border-radius: 5px;
+}
+
+.btn-img {
+    width: 180px;
+}

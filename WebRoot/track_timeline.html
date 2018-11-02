@@ -1,0 +1,72 @@
+<%@ page language="java" pageEncoding="utf-8"%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>足迹</title>
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="node_modules/animate.css/animate.min.css">
+    <link rel="stylesheet" href="node_modules/normalize.css/normalize.css">
+    <link rel="stylesheet" href="node_modules/_font-awesome.css@4.7.2@font-awesome.css/css/font-awesome.css">
+    <link rel="stylesheet" href="public/css/public.css">
+    <link rel="stylesheet" href="./css/track.css">
+    <link rel="stylesheet" href="./public/css/trackBox.css">
+    <link rel="stylesheet" href="./css/timeline.css">
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="node-modules/animejs/anime.js"></script>
+    <script src="node_modules/masonry-layout/dist/masonry.pkgd.js"></script>
+    <script src="./js/underscore-min.js"></script>
+</head>
+<body>
+    <%@include file="./public/page/header.html"%>
+	<div class="container content-box">
+            <ul class="timeline">
+                    <li class="timeline-milestone is-completed timeline-start">
+                      <div class="timeline-action">
+                        <h2 class="title">Begin</h2>
+                        <span class="date">First quarter 2013</span>
+                        <div class="content">
+                          We will have a small kickoff
+                        </div>
+                      </div>
+                    </li>
+                    <li class="timeline-milestone is-current">
+                      <div class="timeline-action is-expandable expanded">
+                        <h2 class="title">Initial planning</h2>
+                        <span class="date">Second quarter 2013</span>
+                        <div class="content">
+                          <ul class="file-list">
+                            <li><a href="example/video" class="video-link">Introduction video</a></li>
+                            <li><a href="example.pdf">Project Plan, pdf 2,8 MB</a></li>
+                            <li><a href="example.pdf">Requirements, pdf 5,3 MB</a></li>
+                            <li><a href="example.pdf">Test Plan, pdf 7,6 MB</a></li>
+                          </ul>
+                        </div>
+                      </div>
+                    </li>
+                    <li class="timeline-milestone is-future">
+                      <div class="timeline-action is-expandable">
+                        <h2 class="title">Start construction</h2>
+                        <span class="date">Fourth quarter 2013</span>
+                        <div class="content">
+                          
+                        </div>
+                      </div>
+                    </li>
+                    <li class="timeline-milestone is-future timeline-end">
+                      <div class="timeline-action">
+                        <h2 class="title">Test and verify</h2>
+                        <span class="date">Second quarter 2014</span>
+                        <div class="content">
+                          
+                        </div>
+                      </div>
+                    </li>
+                  </ul>
+	</div>
+    <%@include file="./public/page/footer.html"%>
+    <%@include file="./public/page/loginModal.html"%>
+    <script src="./js/timeline.js"></script>
+</body>
+</html>

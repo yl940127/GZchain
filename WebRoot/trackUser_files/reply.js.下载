@@ -1,0 +1,784 @@
+
+bt.module({builder: function(bt){
+    var j$ = jQuery;
+    var popup = false;
+    var _share_waypoint;
+    var _share_waypoints = [];
+    var _share_photos = [];
+    var sns_data;
+    var sns_type_name_mapping = {
+        "sina": "新浪微博",
+        "tencent": "腾讯微博",
+        "renren": "人人网"
+    };
+
+    var like_func = function(event){
+        var self = j$(this);
+        var active_class = 'like-btn-active';
+        var recommended = j$(this).hasClass(active_class);
+        var temp = j$(this).parents('div.waypoint');
+        var trip_id = temp.data('trip_id');
+        var waypoint_id = temp.data('waypoint_id');
+        if (!(trip_id && waypoint_id)) {
+            return false;
+        }
+
+        self.addClass('ajax-loading');
+        var url = '/trips/' + trip_id + '/waypoints/' + waypoint_id + '/';
+        url += recommended?'delete_recommend/':'recommend/';
+        if (!BT_USER_ID) {
+            bt.misc.redirect_to_login(function () {
+                j$.ajax({url: url,dataType: 'json',type: 'POST'});
+            });
+            return false;
+        }
+        var expanded = j$(this).parents(".waypoint").find("a.comment-btn")
+            .data('expanded') || false;
+        j$.ajax({
+            url: url,
+            dataType: 'json',
+            type: 'POST',
+            success: function(msg){
+                if (msg.error)
+                    alert(msg.error);
+                else {
+                    var _numPlus = parseInt(self.attr('data-time'), 10) + 1;
+                    var _numReduce = parseInt(self.attr('data-time'), 10) - 1;
+                    if (recommended) {
+                        self.removeClass(active_class).attr({
+                            'data-num': '0',
+                            'data-time': _numReduce
+                        });
+                    } else {
+                        self.addClass(active_class).attr({
+                            'data-num': '1',
+                            'data-time': _numPlus
+                        });
+                    }
+                    bt.misc.modifyCount(self, recommended? -1: 1);
+
+                    if(expanded) {
+                        var reply_panel = self.parents(".waypoint").next();
+                        if (recommended) {
+                            j$(".like-avatars #la" + msg.id).remove();
+                            if(reply_panel.find(".like-avatars li:hidden").length > 0) {
+                                reply_panel.find(".like-avatars li:hidden").show();
+                            }
+                            bt.misc.modifyCount(reply_panel.find(".like-title"), -1);
+                            if(reply_panel.find(".like-avatars").children().length == 0
+                                && reply_panel.find(".empty-like-title").is(":hidden")) {
+                                reply_panel.find(".like-title").hide();
+                                reply_panel.find(".empty-like-title").show();
+                            }
+                        } else {
+                            var ele = j$(msg.html);
+                            if(reply_panel.find(".like-avatars").length > 16) {
+                                reply_panel.find(".like-avatars li").last().hide();
+                            }
+                            ele.prependTo((".like-avatars"));
+                            bt.misc.modifyCount(reply_panel.find(".like-title"), -1);
+                            if(reply_panel.find(".like-title").is(":hidden")) {
+                                reply_panel.find(".empty-like-title").hide();
+                                reply_panel.find(".like-title").show();
+                            }
+                        }
+                    }
+                }
+            },
+            error: function(){
+                alert("操作失败，请稍候再试");
+            },
+            complete: function(){self.removeClass('ajax-loading')}
+        });
+        return false;
+    };
+
+    var expand_comments_func = function(event){
+        if (!BT_USER_ID) {
+            bt.misc.redirect_to_login();
+            return false;
+        }
+
+        var self = j$(this);
+        self.unbind(event.type);
+
+        var expanded = j$(this).data('expanded') || false;
+        var trip_item = j$(this).parents('div.waypoint');
+
+        if (expanded) {
+            trip_item.children('div.big-reply-wrapper').remove();
+            j$(this).data('expanded', false);
+            self.bind(event.type, expand_comments_func);
+            trip_item.find('.comment-top-border').hide();
+            trip_item.find('.comment-top-border-none').show();
+            j$(window).resize();
+            return false;
+        }
+
+        self.addClass('ajax-loading');
+        var trip_id = trip_item.data('trip_id');
+        var waypoint_id = trip_item.data('waypoint_id');
+        j$.ajax({
+            url: '/trips/' + trip_id + '/waypoints/' + waypoint_id + '/replies/',
+            success: function(html){
+                trip_item.append(html);
+                trip_item.find('.comment-top-border').show();
+                trip_item.find('.comment-top-border-none').hide();
+                self.data('expanded', true);
+            },
+            complete: function(){
+                self.bind(event.type, expand_comments_func);
+                self.removeClass('ajax-loading');
+            }
+        });
+        return false;
+    };
+
+    var reply_somebody_func = function(event){
+        var self = j$(this);
+
+        var temp =  self.parent().find('.avatar-wrapper');
+        var user_id = temp.data('user_id');
+        var username = temp.attr('title');
+        var form_reply = self.parents('ul.comments:first').prev();
+        form_reply.data('user_id', user_id);
+
+        var comment_input = form_reply.children('input[name="comment"]');
+        var prefix = '回复' + username + ': ';
+        comment_input.val(prefix);
+        comment_input.focus();
+        var ctrl = comment_input[0];
+        var pos = prefix.length;
+        if(ctrl.setSelectionRange) {
+            ctrl.focus();
+            ctrl.setSelectionRange(pos, pos);
+        } else if (ctrl.createTextRange) {
+            var range = ctrl.createTextRange();
+            range.collapse(true);
+            range.moveEnd('character', pos);
+            range.moveStart('character', pos);
+            range.select();
+        }
+        return false;
+    };
+
+    var delete_comment_func = function(event) {
+        var sure = confirm("确定要删除该评论？");
+        if(!sure) {
+            return;
+        }
+        var comment = j$(this).parents("li");
+        var comment_id = comment.data("comment-id");
+        var url = comment.data("url");
+        j$.ajax({
+            url: url,
+            data: {id: comment_id},
+            type: "POST",
+            success: function(resp) {
+                if(resp.error) {
+                    alert(resp.error);
+                } else {
+                    var wp_comment_btn = comment.parents('div.big-reply-wrapper').prev().find('a.comment-btn');
+                    bt.misc.modifyCount(wp_comment_btn, -1);
+                    comment.slideUp(function() {
+                        var comment_list = comment.parents('ul.comments');
+                        comment.remove();
+                        comment_list.find('li:last').removeClass('underline');
+                    });
+                }
+            }
+        });
+    };
+
+    var _render_comment = function(comment, url){
+        url = url.replace("comment", "delete_comment");
+        var custom_url = comment.user.custom_url;
+        if (custom_url == '') {
+            custom_url = 'u/' + comment.user.id;
+        }
+        var msg = '' +
+        '<li data-url="' + url + '" data-comment-id="' + comment.id + '">' +
+            '<div class="avatar-wrapper float-left" title="' + comment.user.name + '" data-user_id="' + comment.user.id + '">' +
+                '<a class="avatar" href="/' + custom_url + '/">' +
+                    '<img width="28" height="28" src="' + comment.user.avatar_m + '" alt="' + comment.user.name + '" />' +
+                    '<div class="avatar-mask-28"></div>' +
+                '</a>' +
+            '</div>' +
+            '<div class="comment-text float-left" title="' + comment.date_added + '">' +
+                '<p class="reply">' +
+                    '<a href="/' + custom_url + '/" class="author">' + comment.user.name + ': </a>' +
+                    comment.comment +
+                '</p>' +
+            '</div>' +
+            '<a class="btn-reply float-right" href="javascript:void(0)">回复</a>' +
+            '<a class="btn-delete float-right" href="javascript:void(0)">删除</a>' +
+            '<div class="clear-both"></div>' +
+        '</li>';
+        return msg;
+    };
+
+    var post_comment_func = function(event){
+        var self = j$(this);
+        var form_comment = null;
+        if (event.type != 'submit') {
+            form_comment = self.parents('form.comment:first');
+        } else {
+            form_comment = self;
+        }
+        if (form_comment.data('submitting')) return;
+        form_comment.data('submitting', true);
+
+        var comment_btn = form_comment.find('div.btn-comment');
+        comment_btn.text('评论中..');
+        var data = form_comment.serialize();
+        var user_id = form_comment.data('user_id');
+        if (user_id) {
+            data += '&to=' + user_id;
+        }
+        j$.ajax({
+            url: form_comment.attr('action'),
+            type: 'POST',
+            data: data,
+            success: function(msg){
+                msg = eval(msg);
+                if (msg.error)
+                    alert(msg.error);
+                else {
+                    var comment_html = _render_comment(msg.comment, form_comment.attr('action'));
+                    var ul_comments = form_comment.next('ul.comments');
+                    var btn_comment = form_comment.parents('div.big-reply-wrapper').prev().find('a.comment-btn');
+                    bt.misc.modifyCount(btn_comment, 1);
+
+                    ul_comments.find('li:last').addClass('underline');
+                    if (ul_comments.length != 0) {
+                        ul_comments.append(comment_html);
+                    } else {
+                        j$('<ul>', {
+                          'class': 'comments',
+                          'html': comment_html
+                      }).insertAfter(form_comment);
+                    }
+                    form_comment.find('input[name="comment"]').val('');
+                }
+            },
+            complete: function(){
+                comment_btn.text('评论');
+                form_comment.data('submitting', false);
+            }
+        });
+        return false;
+    };
+
+    /*
+    var share_to_weibo = function(event){
+        if (!BT_USER_ID) {
+            bt.misc.redirect_to_login();
+            return false;
+        }
+        var btn = j$(this);
+        j$.getJSON('/accounts/settings/sync_sns/status/', function(data){
+            if (data.sina) {
+                var temp = btn.parents('div.waypoint');
+                var trip_id = temp.data('trip_id');
+                var waypoint_id = temp.data('waypoint_id');
+                if (OWNED_BY_USER) {
+                    j$.post('/trips/' + trip_id + '/waypoints/' + waypoint_id + '/share/', {
+                        'type': 'sina'
+                    }, function(data){
+                        alert("分享成功！");
+                    });
+                } else {
+                    j$('#popup_sync_title').data('trip_id', trip_id).data('waypoint_id', waypoint_id);
+                    j$.fancybox(j$('#popup_sync_title'), {
+                        "minHeight": 32
+                    });
+                    j$('#share_status').focus();
+                    return;
+                }
+
+            } else {
+                alert("您还未绑定新浪微博，请绑定后重试");
+                j$.fancybox('/accounts/settings/sync_sns/connect_sina/?show_result=1', {
+                    'type': 'iframe'
+                });
+            }
+        });
+    };
+    */
+
+    /*
+    var other_share_to_weibo = function(event){
+        var trip_id = j$('#popup_sync_title').data('trip_id');
+        var waypoint_id = j$('#popup_sync_title').data('waypoint_id');
+        var status = $('#share_status').val();
+        j$.fancybox.close(true);
+        j$.post('/trips/' + trip_id + '/waypoints/' + waypoint_id + '/share/', {
+            'type': 'sina',
+            'status': status
+        }, function(data){
+            alert("分享成功！");
+        });
+
+    };
+    */
+
+    var show_share_popup = function(e) {
+        _share_waypoint = j$(this).parents('div.waypoint');
+        showSharePopup();
+    };
+
+    var bind_func_with_event = function(func, live){
+        var _func = function(objs, event_type) {
+            var _event_type = event_type || 'click';
+            if (live) {
+                objs.live(_event_type, func);
+            } else {
+                objs.bind(_event_type, func);
+            }
+        };
+        return _func;
+    };
+
+    var bind_like_func = bind_func_with_event(like_func);
+    var bind_expand_cmts_func = bind_func_with_event(expand_comments_func);
+    var bind_reply_somebody_func = bind_func_with_event(reply_somebody_func, true);
+    var bind_delete_comment_func = bind_func_with_event(delete_comment_func, true);
+    var bind_post_comment_func = bind_func_with_event(post_comment_func, true);
+    //var bind_other_share_to_weibo = bind_func_with_event(other_share_to_weibo);
+    var bind_show_share_panel = bind_func_with_event(show_share_popup);
+
+    bt.reply.bind_like_func = bind_like_func;
+    bt.reply.bind_expand_cmts_func = bind_expand_cmts_func;
+    bt.reply.bind_reply_somebody_func = bind_reply_somebody_func;
+    bt.reply.bind_delete_comment_func = bind_delete_comment_func;
+    bt.reply.bind_post_comment_func = bind_post_comment_func;
+    //bt.reply.bind_other_share_to_weibo = bind_other_share_to_weibo;
+    bt.reply.bind_show_share_panel = bind_show_share_panel;
+
+    bt.reply.bind_all = function() {
+        bt.reply.bind_like_func(j$('a.like-btn'), 'click');
+        bt.reply.bind_like_func(j$('a.fancybox-like'), 'click');
+        bt.reply.bind_expand_cmts_func(j$('a.comment-btn'), 'click');
+        bt.reply.bind_reply_somebody_func(j$('ul.comments a.btn-reply'), 'click');
+        bt.reply.bind_delete_comment_func(j$('ul.comments a.btn-delete'), 'click');
+        bt.reply.bind_post_comment_func(j$('form.comment'), 'submit');
+        bt.reply.bind_post_comment_func(j$('form.comment .btn-comment'), 'click');
+        bt.reply.bind_show_share_panel(j$('a.share-btn'), 'click');
+        //bt.reply.bind_other_share_to_weibo(j$('#share_submit_status'), 'click');
+    };
+
+    // bind funcs
+    j$(function(){
+        bt.reply.bind_all();
+    });
+
+    var center = function(){
+        var windowWidth = document.documentElement.clientWidth;
+        var windowHeight = document.documentElement.clientHeight;
+        var popupHeight = j$("#popupContainer").height();
+        var popupWidth = j$("#popupContainer").width();
+        j$("#popupContainer").css({
+            "position": "fixed",
+            "top": windowHeight / 2 - popupHeight / 2,
+            "left": windowWidth / 2 - popupWidth / 2
+        });
+    };
+
+    var hidePopup = function(){
+        if (popup == true) {
+            j$("#overlayEffect").fadeOut("slow");
+            j$("#popupContainer").fadeOut("slow");
+            j$("#close").fadeOut("slow");
+            popup = false;
+        }
+    };
+
+    var initLocationEvent = function() {
+        var popup_marker;
+        var options = {
+            zoom: 14,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        };
+        var map_popup = new google.maps.Map(document.getElementById("map_popup"), options);
+
+        j$("a.location").live('click', function() {
+            if (popup == false) {
+                j$("#overlayEffect").fadeIn("slow");
+                j$("#popupContainer").fadeIn("slow");
+                j$("#close").fadeIn("slow");
+                center();
+                popup = true;
+                var p = j$(this).parents('div.waypoint');
+                var latlng = new google.maps.LatLng(parseFloat(p.attr('lat')), parseFloat(p.attr('lng')));
+                google.maps.event.trigger(map_popup, 'resize');
+                if (popup_marker)
+                    popup_marker.setMap(null);
+                popup_marker = new google.maps.Marker({
+                    position: latlng,
+                    map: map_popup
+                });
+                map_popup.setCenter(latlng);
+            }
+            return false;
+        });
+    };
+
+    var initialize = function() {
+        initLocationEvent();
+        j$("#close").click(function() {
+            hidePopup();
+        });
+
+        j$("#overlayEffect").click(function() {
+            hidePopup();
+        });
+    };
+
+    var connectSns = function(sns_type, sns_name) {
+        sns_name = sns_name || sns_type_name_mapping[sns_type];
+        alert("您还未绑定" + sns_name + "，请绑定后重试");
+        if(sns_type == "sina")
+            sns_type = "sina2";
+
+        bt.misc.showPopup(j$("#connect-sns-popup").html(
+            '<iframe id="connect-sns-iframe" src="http://work.breadtrip.com/accounts/settings/sync_sns/connect_"' +
+            sns_type + '"/" width="768" height="630" frameborder="0"></iframe>'));
+    };
+
+    var _createPopup = function(popup) {
+        var windowWidth = document.documentElement.clientWidth;
+        var windowHeight = document.documentElement.clientHeight;
+        var popupHeight = popup.height();
+        var popupWidth = popup.width();
+        if (j$.browser.msie && j$.browser.version == 6) {
+            popup.css({
+                "position": "absolute",
+                "top": $(document).scrollTop() + popupHeight / 2,
+                "left": windowWidth / 2 - popupWidth / 2
+            });
+        } else {
+            popup.css({
+                "position": "fixed",
+                "top": windowHeight / 2 - popupHeight / 2,
+                "left": windowWidth / 2 - popupWidth / 2
+            });
+        }
+    };
+
+    var showSharePopup = function(sns_type) {
+        if (!BT_USER_ID) {
+            bt.misc.redirect_to_login();
+            return false;
+        }
+        bt.sns.checkConnection(function(data) {
+            for(type in sns_type_name_mapping) {
+                var className = "share-" + type + "-active";
+                if(data[type]) {
+                    j$("#share-popup .share-" + type).addClass(className);
+                } else {
+                    j$("#share-popup .share-" + type).removeClass(className);
+                }
+            }
+        });
+        bt.misc.showPopup(j$("#share-popup"));
+        j$("#share-popup .share-" + sns_type).addClass(
+                "share-" + sns_type + "-active");
+    };
+
+    /*
+    var responseSNSClick = function(obj) {
+        j$.getJSON('/accounts/settings/sync_sns/status/?v=2', function(data){
+            sns_data = data;
+            var sns_type = j$(obj).data("type");
+            var connected = data[sns_type];
+            if(connected) {
+                showSharePopup(sns_type, true);
+            } else {
+                connectSns(sns_type);
+            }
+        });
+    };
+    */
+
+    var checkSNSBind = function(obj) {
+        if (!BT_USER_ID) {
+            bt.misc.redirect_to_login();
+            return false;
+        }
+        j$.getJSON('/accounts/settings/sync_sns/status/?v=2', function(data){
+            sns_data = data;
+            if(!obj) {
+                return;
+            }
+            var sns_type = j$(obj).data("type");
+            var connected = data[sns_type];
+            if(!connected) {
+                connectSns(sns_type);
+            } else {
+                showShareMultiPopup();
+            }
+        });
+    };
+
+    var showShareMultiPhotos = function() {
+        j$(".share-multi-photos").show();
+        j$("#share-multi-popup").css({
+            "height": "auto",
+            "top": "-=133"
+        });
+        j$(".share-multi-add").hide();
+    };
+
+    var hideShareMultiPopup = function() {
+        j$("#share-multi-popup").css({
+            "height": "254"
+        }).hide();
+        j$("#overlay").hide();
+        j$("#share-multi-popup").one("click", "#share-multi-best", function () {
+            showShareMultiPhotos();
+        });
+    };
+
+    var selectPhotos = function(select_obj) {
+        select_obj.toggleClass("selected");
+        if ( select_obj.hasClass("selected") ) {
+            _share_photos.push(select_obj.data("waypoint-id"));
+        }else{
+            _share_photos.pop(select_obj.data("waypoint-id"));
+        }
+        var _lastPhoto = j$(".photo-item[data-waypoint-id="+ _share_photos.slice(-1)[0] +"]")[0];
+        var _lastPhotoSrc = j$(_lastPhoto).find("img").attr("src");
+
+        j$("#share-multi-best img").attr("src", _lastPhotoSrc);
+    };
+
+    var showShareMultiPopup = function() {
+        var _popup = j$("#share-multi-popup");
+        var overlay = j$("#overlay");
+
+        _popup.html("").fadeIn();
+        overlay.show();
+        _createPopup(_popup);
+
+        // Change the default text according to sns-type
+        if("tencent" == j$("input#share-to").val()) {
+            j$("#share-multi-popup .message").val("飞往一个陌生之地，你的心是否已盛满勇敢与期盼，" +
+                    "去探索未知的精彩？我在@面包旅行 发现了精彩游记「" + j$("#share-multi-popup .title span").text() + "」，你也来看看吧～" +
+                    "（转播此条即有机会赢取gps 三防相机等大奖，详情点击-->http://url.cn/IGbi98 ）心动在#春游# ");
+        } else {
+            j$("#share-multi-popup .message").val("飞往一个陌生之地，你的心是否已盛满勇敢与期盼，" +
+                    "去探索未知的精彩？我在@面包旅行 发现了精彩游记「" + j$("#share-multi-popup .title span").text() + "」，你也来看看吧～");
+        }
+
+        if (j$("#share-multi-popup").hasClass("has-been-shown")) {
+            return;
+        } else {
+            j$("#share-multi-popup").addClass("has-been-shown");
+        }
+        j$(".photo-item img.photo").each(function(){
+            bt.misc.centerAlignImg($(this), 142, 142, false);
+        });
+        j$(".photo-item img.photo").load(function(){
+            bt.misc.centerAlignImg($(this), 142, 142, false);
+        });
+        j$("#share-multi-popup").on("click", ".photo-item", function() {
+            selectPhotos(j$(this));
+        });
+        j$("#share-multi-popup").one("click", "#share-multi-best", function () {
+            _share_photos.push( j$(this).data("waypoint-id") );
+            showShareMultiPhotos();
+        });
+        overlay.on("click", function() {
+            hideShareMultiPopup();
+        });
+        j$("#share-multi-popup").on("click", " .close", function() {
+            hideShareMultiPopup();
+        });
+    };
+
+    var initShareTripEvent = function () {
+        j$(".trip-tools-share").on("click", function(e) {
+            e.preventDefault();
+            if (!BT_USER_ID) {
+                bt.misc.redirect_to_login();
+                return false;
+            }
+            showShareMultiPopup();
+            j$.ajax({
+                url: "/trips/"+ j$("#trip_id").val() +"/multi_photos/",
+                success: function(html){
+                    j$("#share-multi-popup").html(html);
+                }
+            }).done(function () {
+                // j$("input#share-to").val(sns_type);
+                bt.sns.checkConnection(function(data) {
+                    for(type in sns_type_name_mapping) {
+                        var className = "share-" + type + "-active";
+                        if(data[type]) {
+                            j$("#share-multi-popup .share-" + type).addClass(className);
+                        } else {
+                            j$("#share-multi-popup .share-" + type).removeClass(className);
+                        }
+                    }
+                });
+            });
+        });
+
+        j$("#share-multi-popup").on("submit", "#share-multi", function(e) {
+            // var active = j$("#share-multi-popup a[class*='active']");
+            if ( j$(".share-sina-active").length
+                + j$(".share-tencent-active").length == 0) {
+                alert("请选择分享平台！");
+                return false;
+            }
+
+            e.preventDefault();
+            var trip_id = j$("#share-multi-popup .content").data("trip-id");
+            var url = "/trips/" + trip_id + "/share/?";
+            var form = j$(this);
+            j$('.transient-selected-wps', form).remove();
+            j$(".selected", j$("#share-multi-popup .content")).each(function() {
+                _share_waypoints.push(j$(this));
+                // GET solution
+                //url += "wp=" + j$(this).data("waypoint-id") + "&";
+
+                // POST solution
+                //data += "&wp=" + j$(this).data("waypoint-id");
+
+                // The solution below may be slow in IE6 - use the POST above instead in case
+                j$("<input>").attr({
+                    type: "hidden",
+                    name: "wp",
+                    value: j$(this).data("waypoint-id"),
+                    "class": "transient-selected-wps"
+                }).appendTo(form);
+            });
+            j$("#share-multi-popup .send").css("opacity", 0.5);
+            j$("#share-multi-popup .ajax-indicator").show();
+            // console.log(j$("#share-multi-popup a[class*='active']"));
+            j$("a[class*='active']", j$("#share-multi-popup")).each(function ( i, v) {
+                var type = j$(this).data("type");
+                //分享日志统计
+                var logid = 0;
+                if(type == 'sina'){
+                    logid = 101;
+                }else if(type == 'tencent'){
+                    logid = 403;
+                }
+                bt.log.log({
+                    module: 'trip',
+                    page: 'trip',
+                    pageValue : $('#trip_id').attr('value'),
+                    data : "1004:" + logid
+                });
+                var data = form.serialize() + "&shareto=" + type;
+                j$.post(url, data, function(resp){
+                    for (var i = 0; i < _share_waypoints.length; i++) {
+                        var waypoint_id = _share_waypoints[i].data("waypoint-id");
+                        var count_obj = j$("#wp" + waypoint_id).find("a.share-btn");
+                        bt.misc.modifyCount(count_obj, 1);
+                    }
+                    j$("#share-multi-popup .message").val("飞往一个陌生之地，你的心是否已盛满勇敢与期盼，" +
+                        "去探索未知的精彩？我在@面包旅行 发现了精彩游记「" + j$("#share-multi-popup .title span").text() + "」，你也来看看吧～");
+                    j$(".selected", j$("#share-multi-popup .content")).each(function() {
+                        j$(this).removeClass("selected");
+                        j$(".selected-icon", j$(this)).hide();
+                    });
+                    hideShareMultiPopup();
+                }).done(function() {
+                    j$("#share-multi-popup .send").css("opacity", 1);
+                    j$("#share-multi-popup .ajax-indicator").hide();
+                    bt.misc.modifyCount(j$(".trip-tools-share b"), 1);
+                }).fail(function() {
+                    alert("分享失败，请稍后重试。")
+                });
+            });
+            _share_waypoints = [];
+            return false;
+        });
+
+        j$(".popup").on("click", ".share-sns", function() {
+            var sns_type = j$(this).data("type");
+            var obj = j$(this);
+            bt.sns.requireConnection(sns_type, function() {
+                obj.toggleClass("share-" + sns_type + "-active");
+            });
+        });
+
+        j$("#share-popup form#share").submit(function() {
+            if(j$(".share-sina-active").length
+                + j$(".share-tencent-active").length
+                + j$(".share-renren-active").length == 0) {
+                alert("请选择分享平台！");
+                return false;
+            }
+            
+            j$("input#share-to-sina").val(j$(".share-sina-active").length);
+            j$("input#share-to-tencent").val(j$(".share-tencent-active").length);
+            j$("input#share-to-renren").val(j$(".share-renren-active").length);
+            var trip_id = _share_waypoint.data('trip_id');
+            var waypoint_id = _share_waypoint.data('waypoint_id');
+            var url = '/trips/' + trip_id + '/waypoints/' + waypoint_id + '/share/';
+            var data = j$(this).serialize();
+            //var _this = this;
+            j$("#share-popup .send").css("opacity", 0.5);
+            j$("#share-popup .ajax-indicator").show();
+
+            //分享日志统计
+            if(j$(".share-sina-active").length){
+                bt.log.log({
+                    module: 'waypoint',
+                    page: 'waypoint',
+                    pageValue : waypoint_id,
+                    data : "1004:101"
+                });
+            }
+            if(j$(".share-tencent-active").length){
+                bt.log.log({
+                    module: 'waypoint',
+                    page: 'waypoint',
+                    pageValue : waypoint_id,
+                    data : "1004:403"
+                });
+            }
+            if(j$(".share-renren-active").length){
+                bt.log.log({
+                    module: 'waypoint',
+                    page: 'waypoint',
+                    pageValue : waypoint_id,
+                    data : "1004:301"
+                });
+            }
+            
+            
+            j$.post(url, data, function(resp){
+                alert("发送成功！");
+                var share_count_obj = _share_waypoint.find('a.share-btn');
+                bt.misc.modifyCount(share_count_obj, resp.shared_count);
+                j$("#share-popup textarea").val("定格旅途中遇见的美丽瞬间。我在@面包旅行 中发现了很赞的照片！");
+                bt.misc.hidePopup(j$("#share-popup"));
+            }).done(function() {
+                j$("#share-popup .send").css("opacity", 1);
+                j$("#share-popup .ajax-indicator").hide();
+            });
+            return false;
+        });
+    };
+
+    $(document).ready(function(){
+        bt.gmap.initMapScript(initialize);
+        initShareTripEvent();
+    });
+
+    var connectSnsCallback = function() {
+        var sns_type = arguments[0];
+        j$.getJSON('/accounts/settings/sync_sns/status/?v=2', function(data){
+            sns_data = data;
+        });
+        showSharePopup(sns_type);
+    };
+
+    bt.reply.initLocationEvent = initLocationEvent;
+    bt.reply.connectSnsCallback = connectSnsCallback;
+}});
+

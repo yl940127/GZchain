@@ -1,0 +1,392 @@
+
+bt.module({builder: function(bt) {
+    var j$ = jQuery;
+    var csrf;
+
+    var VALIDATE_MSG = {
+        OK: 0,
+        NULL: 1,
+        WRONG_FORMAT: 2
+    };
+
+    var testBrowserType = function() {
+        var sys = {};
+        var ua = navigator.userAgent.toLowerCase();
+        if (window.ActiveXObject) {
+            sys.type = "msie";
+            sys.version = ua.match(/msie ([\d.]+)/)[1];
+        }
+        /*else if (document.getBoxObjectFor) {
+            sys.type = "firefox";
+            sys.version = ua.match(/firefox\/([\d.]+)/)[1];
+        } else if (window.MessageEvent && !document.getBoxObjectFor) {
+            sys.type = "chrome";
+            sys.version = ua.match(/chrome\/([\d.]+)/)[1];
+        } else if (window.opera) {
+            sys.type = "opera";
+            sys.version = ua.match(/opera.([\d.]+)/)[1];
+        } else if (window.openDatabase) {
+            sys.type = "version";
+            sys.version = ua.match(/version\/([\d.]+)/)[1];
+        }*/
+
+        return sys;
+    };
+
+    var getUserId = function() {
+        return BT_USER_ID;
+    };
+
+    var isAuthenticated = function() {
+        return BT_USER_ID != null;
+    };
+
+    var validateEmail = function(val) {
+        if (!val) {
+            return VALIDATE_MSG.NULL;
+        }
+
+        var re = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+        if (!re.test(val)) {
+            return VALIDATE_MSG.WRONG_FORMAT;
+        }
+
+        return VALIDATE_MSG.OK;
+    };
+
+    var getFilename = function(obj) {
+        obj = j$(obj);
+        var path = obj.val();
+        var filename = path.replace(/.*(\/|\\)/, "");
+        return filename;
+    };
+
+    var redirect_to_login = function(callback){
+        showPopup(j$("#login-popup"));
+        bt.base.popup_login(callback);
+    };
+
+    var setCsrfToken = function(val) {
+        csrf = val;
+    };
+
+    var initPostData = function() {
+        if(!csrf) {
+            csrf = j$("#csrf_token").attr("data-csrf");
+        }
+        return {csrfmiddlewaretoken: csrf};
+    };
+
+    var centerAlignImg = function(img_obj, h, w, force) {
+        img_obj.width("").height("");
+        var force = force || false;
+        var height = img_obj.height() || img_obj.parent().height();
+        var width = img_obj.width() || img_obj.parent().width();
+        if (height === h && width === w && !force) {
+            return;
+        } else {
+            var factor = Math.max(h / height, w / width);
+            // resize
+            width = width * factor;
+            height = height * factor;
+            img_obj.css('width', width + 'px');
+            img_obj.css('height', height + 'px');
+        }
+        img_obj.css('margin-top', (h - height) / 2)
+        img_obj.css('margin-left', (w - width) / 2)
+    };
+
+    var centerAlignImg_x = function(img_obj, h, w) {
+        img_obj.width("").height("");
+        var height = img_obj.height() || img_obj.parent().height();
+        var width = img_obj.width() || img_obj.parent().width();
+        if (height === h && width === w) {
+            return;
+        } else {
+            var factor = Math.max(Math.max(h, w) / height, Math.max(h, w) / width);
+            // resize
+            width = width * factor;
+            height = height * factor;
+            img_obj.css('width', width + 'px');
+            img_obj.css('height', height + 'px');
+        }
+        img_obj.css('margin-top', (h - height) / 2)
+        img_obj.css('margin-left', (w - width) / 2)
+    };
+
+    var centerAlignImg2 = function(img_obj, h, w) {
+        img_obj.width("").height("");
+        var height = img_obj.height() || img_obj.parent().height();
+        var width = img_obj.width() || img_obj.parent().width();
+        if (height === h && width === w) {
+            return;
+        } else {
+            var factor = Math.min(Math.max(h, w) / height, Math.max(h, w) / width);
+            // resize
+            width = width * factor;
+            height = height * factor;
+            img_obj.css('width', width + 'px');
+            img_obj.css('height', height + 'px');
+        }
+        img_obj.css('margin-top', (h - height) / 2)
+        img_obj.css('margin-left', (w - width) / 2)
+    };
+
+    var centerAlignImg_r = function(rotated, img_wrapper, image_h, image_w, h, w) {
+        var img_obj = img_wrapper.find("image, img");
+        var height = parseInt(image_h);
+        var width = parseInt(image_w);
+        var sys = testBrowserType();
+        if (height === h && width === w) {
+            return;
+        } else {
+            var factor = rotated? Math.min(h / width, w / height): Math.min(h / height, w / width);
+            // resize
+            width = width * factor;
+            height = height * factor;
+            img_obj.css('width', width + 'px');
+            img_obj.css('height', height + 'px');
+            if(sys.type == "msie" && sys.version < "9.0") {
+                img_wrapper.css('width', width + 'px');
+                img_wrapper.css('height', height + 'px');
+                img_wrapper.find(".photo-img").css('width', width + 'px');
+                img_wrapper.find(".photo-img").css('height', height + 'px');
+            }
+        }
+        if(sys.type == "msie" && sys.version < "9.0") {
+            if(rotated) {
+                img_wrapper.css('margin-top', (h - height) / 2);
+                img_wrapper.css('margin-left', (w - width) / 2);
+                img_obj.css('margin-top', (h - width) / 2);
+                img_obj.css('margin-left', (w - height) / 2);
+            } else {
+                img_wrapper.css('margin-top', 0);
+                img_wrapper.css('margin-left', 0);
+            }
+        } else {
+            img_obj.css('margin-top', (h - height) / 2);
+            img_obj.css('margin-left', (w - width) / 2);
+        }
+    };
+
+    var PositionTripImage = function(img, max_width){
+        img.width("").height("");
+        var width = img.width();
+        var height = img.height();
+        if (!(width === max_width)) {
+            var factor = max_width / width;
+            // resize
+            width = max_width;
+            height = height * factor;
+            img.css('width', width + 'px');
+            img.css('height', height + 'px');
+        }
+    };
+
+    var resendActivateEmail = function(url) {
+        jQuery("img.ajax_icon").show();
+        jQuery.ajax({
+            url: url,
+            success: function(resp) {
+                if(resp.success) {
+                    alert("验证邮件已发送");
+                } else {
+                    alert("验证邮件发送失败，请稍后再试");
+                }
+                jQuery("img.ajax_icon").hide();
+            },
+            dataType: "json"
+        });
+    }
+
+    var initDatepicker = function() {
+        j$.datepicker.regional['zh-CN'] = {
+            closeText: '关闭',
+            prevText: '&#x3c;上月',
+            nextText: '下月&#x3e;',
+            currentText: '今天',
+            monthNames: ['一月','二月','三月','四月','五月','六月',
+            '七月','八月','九月','十月','十一月','十二月'],
+            monthNamesShort: ['一','二','三','四','五','六',
+            '七','八','九','十','十一','十二'],
+            dayNames: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],
+            dayNamesShort: ['周日','周一','周二','周三','周四','周五','周六'],
+            dayNamesMin: ['日','一','二','三','四','五','六'],
+            weekHeader: '周',
+            dateFormat: 'yy-mm-dd',
+            firstDay: 1,
+            isRTL: false,
+            showMonthAfterYear: true,
+            yearSuffix: '年'};
+        j$.datepicker.setDefaults(j$.datepicker.regional['zh-CN']);
+        j$("input.date").datepicker({
+            yearRange: "-20:+0",
+            changeYear: true
+        });
+    };
+
+    var modifyCount = function(obj, count, re1, re2){
+        // count 是变化量，可以是正、负值
+        if(!obj || !obj.html()) {
+            return;
+        }
+        var count = count || 1;
+        var re1 = /[\d]/
+        var re2 = /[^\d]+/g;
+        var old_strings = obj.html().split(re1);
+        var num = parseInt(obj.html().replace(re2, ''));
+        old_strings.splice(1, 0, num + count);
+        var t = old_strings.join('');
+        obj.html(old_strings.join(''));
+    };
+    
+    var refreshCount = function(obj, count, re1, re2){
+        // count 是新值，会直接覆盖旧值
+        if(!obj || !obj.html()) {
+            return;
+        }
+        var count = count || 0;
+        var re1 = /[\d]/
+        var re2 = /[^\d]+/g;
+        var old_strings = obj.html().split(re1);
+        var num = parseInt(obj.html().replace(re2, ''));
+        old_strings.splice(1, 0, count);
+        var t = old_strings.join('');
+        obj.html(old_strings.join(''));
+    };
+
+    var textboxFocus = function(ctrl) {
+        var prefix = ctrl.val();
+        ctrl.focus();
+        pos = prefix.length;
+        if(ctrl.setSelectionRange) {
+            ctrl.focus();
+            ctrl.setSelectionRange(pos, pos);
+        } else if (ctrl.createTextRange) {
+            var range = ctrl.createTextRange();
+            range.collapse(true);
+            range.moveEnd('character', pos);
+            range.moveStart('character', pos);
+            range.select();
+        }
+    };
+
+    var initInputPlaceholder = function(objs) {
+        if("placeholder" in document.createElement('input')) {
+            return;
+        }
+        var objs = objs || j$("[placeholder]");
+
+        objs.each(function(){
+            var input = j$(this);
+            if(input.attr('type') == 'password'){
+                var pwdPlaceholder = $('<input class="pwd-placeholder" type="text" value='+input.attr("placeholder")+' autocomplete="off" />');
+                input.after(pwdPlaceholder);
+                pwdPlaceholder.show();
+                input.hide();
+
+                pwdPlaceholder.focus(function(){  
+                    pwdPlaceholder.hide();  
+                    input.show();  
+                    input.focus();  
+                });  
+                  
+                input.blur(function(){  
+                    if(input.val() == '') {  
+                        pwdPlaceholder.show();  
+                        input.hide();  
+                    }  
+                });  
+            }else{
+                input.focus(function() {
+                    if(input.val() == input.attr("placeholder")) {
+                        input.val("");
+                        input.removeClass("placeholder");
+                    }
+                }).blur(function() {
+                    if(input.val() == "") {
+                        input.addClass("placeholder");
+                        input.val(input.attr("placeholder"));
+                    }
+                }).blur();
+            }
+        });
+        
+    };
+
+    var alertGeneralError = function() {
+        alert("网络错误，请稍后再试");
+    };
+
+    var showPopup = function(obj, callback) {
+        var popup = j$(obj);
+        var overlay = j$("#overlay");
+        popup.fadeIn(callback);
+        overlay.show();
+        var windowWidth = document.documentElement.clientWidth;
+        var windowHeight = document.documentElement.clientHeight;
+        var popupHeight = popup.height();
+        var popupWidth = popup.width();
+        popup.css({
+            "position": "fixed",
+            "top": windowHeight / 2 - popupHeight / 2,
+            "left": windowWidth / 2 - popupWidth / 2,
+            "z-index": 2100
+        });
+        overlay.click(function() {
+            popup.fadeOut();
+            overlay.hide();
+        });
+        popup.find(".close").click(function() {
+            popup.fadeOut();
+            overlay.hide();
+        });
+    };
+
+    var hidePopup = function(obj) {
+        var popup = j$(obj);
+        var overlay = j$("#overlay");
+        popup.fadeOut();
+        overlay.hide();
+    };
+
+    var unique = function(arr){
+        var ret = [],
+            hash = {};
+        for (var i = 0; i < arr.length; i++) {
+            var item = arr[i],
+                key = typeof(item) + item;
+            if (hash[key] !== 1) {
+                ret.push(item);
+                hash[key] = 1;
+            }
+        }
+        return ret;
+    };
+
+
+    bt.misc.VALIDATE_MSG = VALIDATE_MSG;
+    bt.misc.testBrowserType = testBrowserType;
+    bt.misc.getUserId = getUserId;
+    bt.misc.isAuthenticated = isAuthenticated;
+    bt.misc.validateEmail = validateEmail;
+    bt.misc.getFilename = getFilename;
+    bt.misc.redirect_to_login = redirect_to_login;
+    bt.misc.setCsrfToken = setCsrfToken;
+    bt.misc.initPostData = initPostData;
+    bt.misc.centerAlignImg = centerAlignImg;
+    bt.misc.centerAlignImg_x = centerAlignImg_x;
+    bt.misc.centerAlignImg_r = centerAlignImg_r;
+    bt.misc.centerAlignImg2 = centerAlignImg2;
+    bt.misc.resendActivateEmail = resendActivateEmail;
+    bt.misc.PositionTripImage = PositionTripImage;
+    bt.misc.initDatepicker = initDatepicker;
+    bt.misc.modifyCount = modifyCount;
+    bt.misc.refreshCount = refreshCount;
+    bt.misc.textboxFocus = textboxFocus;
+    bt.misc.initInputPlaceholder = initInputPlaceholder;
+    bt.misc.alertGeneralError = alertGeneralError;
+    bt.misc.showPopup = showPopup;
+    bt.misc.hidePopup = hidePopup;
+    bt.misc.unique = unique;
+}});
