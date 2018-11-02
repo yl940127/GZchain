@@ -12,19 +12,19 @@ CREATE TABLE  `users`(
     COMMENT '密码',
     email       VARCHAR(20) NOT NULL
     COMMENT '邮箱',
-    realName     VARCHAR(20)
+    realName    VARCHAR(20)
     COMMENT '真实姓名',
-    telNum       VARCHAR(12)
+    telNum      VARCHAR(12)
     COMMENT '电话号码',
-    idCard       VARCHAR(19)
+    idCard      VARCHAR(19)
     COMMENT '身份证',
     birthday     DATETIME
     COMMENT '生日',
-    education    VARCHAR(19),
+    education   VARCHAR(19),
     COMMENT '教育',
-    sex           INT
+    sex         INT
     COMMENT '性别',
-    headImgUrl   VARCHAR(200)
+    headImgUrl  VARCHAR(200)
     COMMENT '头像',
     PRIMARY KEY `userId`(`userId`)
 )
