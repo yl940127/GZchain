@@ -7,7 +7,7 @@ import java.util.Date;
  * @author 
  */
 public class UsersDTO implements Serializable {
-    private String userid;
+    private Long userid;
 
     private String username;
 
@@ -31,11 +31,11 @@ public class UsersDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public String getUserid() {
+    public Long getUserid() {
         return userid;
     }
 
-    public void setUserid(String userid) {
+    public void setUserid(Long userid) {
         this.userid = userid;
     }
 

@@ -10,6 +10,20 @@ public class ShareVO {
      */
     private Long product_id;
 
+    /**
+     * 用户id
+     * @return
+     */
+    private Long user_id;
+
+    public Long getUser_id() {
+        return user_id;
+    }
+
+    public void setUser_id(Long user_id) {
+        this.user_id = user_id;
+    }
+
     public Long getId() {
         return id;
     }

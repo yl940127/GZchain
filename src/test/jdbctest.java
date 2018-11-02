@@ -41,7 +41,7 @@ public class jdbctest {
 		
 		TrackExample example = new TrackExample();
 //		example.setLocation(jsonObject.getString("location"));
-		example.setUserid(jsonObject.getString("userId"));
+		example.setUserid(jsonObject.getLong("userId"));
 		
 		TrackDaoImpl trackDaoImpl = new TrackDaoImpl();
 		List<TrackDTO> list = trackDaoImpl.selectBySituation(example);

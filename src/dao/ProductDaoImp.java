@@ -19,7 +19,7 @@ public class ProductDaoImp implements ProductDao {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
-        String sql = "select * from product";
+        String sql = "select * from product limit 0,5";
 
         pstmt = con.prepareStatement(sql);
         rs = pstmt.executeQuery();

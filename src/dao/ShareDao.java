@@ -1,6 +1,7 @@
 package dao;
 
 import entity.ProductVO;
+import entity.UsersDTO;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -13,5 +14,5 @@ public interface ShareDao {
      * @return
      * @throws SQLException
      */
-    public List<ProductVO> findById(Long id)throws SQLException;
+    public List<UsersDTO> findById(Long id)throws SQLException;
 }

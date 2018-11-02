@@ -49,7 +49,7 @@ public class CreateTrack extends HttpServlet {
 		
 		HttpSession session = request.getSession();
 		UsersDTO user = (UsersDTO) session.getAttribute("user");
-		String userid = user.getUserid();
+		Long userid = user.getUserid();
 		
 		TrackDaoImpl trackDaoImpl = new TrackDaoImpl();
 		TrackDTO track = new TrackDTO();

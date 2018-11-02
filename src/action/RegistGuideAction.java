@@ -50,7 +50,7 @@ public class RegistGuideAction extends HttpServlet {
 		String provinceid = request.getParameter("provinceId");
 		String cityid = request.getParameter("cityId");
 		String address = request.getParameter("address");
-		String userid = ((UsersDTO) request.getSession().getAttribute("user")).getUserid();
+		Long userid = ((UsersDTO) request.getSession().getAttribute("user")).getUserid();
 		
 		GuideDaoImpl guideDaoImpl = new  GuideDaoImpl();
 		GuidesExample example = new GuidesExample();

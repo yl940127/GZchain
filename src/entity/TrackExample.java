@@ -16,7 +16,7 @@ public class TrackExample {
 
     private Integer thumbupcount = null;
 
-    private String userid = null;
+    private Long userid = null;
 
 	public Date getPublictime() {
 		return publictime;
@@ -58,11 +58,11 @@ public class TrackExample {
 		this.thumbupcount = thumbupcount;
 	}
 
-	public String getUserid() {
+	public Long getUserid() {
 		return userid;
 	}
 
-	public void setUserid(String userid) {
+	public void setUserid(Long userid) {
 		this.userid = userid;
 	}
     

@@ -1,7 +1,6 @@
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `product`;
 DROP TABLE IF EXISTS `share`;
-DROP TABLE IF EXISTS `user_share`;
 
 CREATE TABLE  `users`(
     userId      INT(20)             NOT NULL AUTO_INCREMENT
@@ -33,7 +32,7 @@ CREATE TABLE  `users`(
 CREATE TABLE `product` (
   id          INT(20)               NOT NULL  AUTO_INCREMENT
   COMMENT 'id',
-  productName        VARCHAR(32)    NOT NULL
+  NAME        VARCHAR(32)    NOT NULL
   COMMENT '商品名称',
   price       DECIMAL(10, 2)        NOT NULL
   COMMENT '价格',
@@ -56,20 +55,11 @@ CREATE TABLE `share`(
   COMMENT 'id',
   product_id  INT(20)              NOT NULL
   COMMENT '商品id',
-  PRIMARY KEY `id`(`id`),
-  KEY `product_id`(`product_id`)
-)
-  COMMENT '商品分享表';
-
-CREATE TABLE `user_share`(
-  id         INT(20)               NOT NULL AUTO_INCREMENT
-  COMMENT 'id',
   user_id    INT(20)               NOT NULL
   COMMENT '用户id',
-  share_id   INT(20)               NOT NULL
-  COMMENT '商品分享id',
   PRIMARY KEY `id`(`id`),
-  KEY `user_id`(`user_id`),
-  KEY `share_id`(`share_id`)
+  KEY `product_id`(`product_id`),
+  KEY `user_id`(`user_id`)
 )
-   COMMENT '用户分享关系表';
+  COMMENT '用户分享表';
+

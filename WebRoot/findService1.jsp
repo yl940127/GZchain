@@ -354,7 +354,6 @@ background-color: grey;
 		</div>
 	</div>
 	<!-- footer end -->
-
 	<script src="./js/findService.js"></script> 
 </body>
 </html>
