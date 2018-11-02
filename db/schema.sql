@@ -22,7 +22,7 @@ CREATE TABLE  `users`(
     COMMENT '生日',
     education    VARCHAR(19),
     COMMENT '教育',
-    sex          INT
+    sex           INT
     COMMENT '性别',
     headImgUrl   VARCHAR(200)
     COMMENT '头像',
