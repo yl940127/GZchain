@@ -59,7 +59,7 @@
                         class="fa fa-heart-o"></i>价格：1</a><a class="btn-comment" target="_blank"
                                                           href="/trips/2387426340/#wp2364074168"><i
                         class="fa fa-comment-o"></i>销量：4</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="/trips/2387426340">转发</a>
+                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
 
                 </p>
 
@@ -95,11 +95,12 @@
                         class="fa fa-heart-o"></i>价格:10</a><a class="btn-comment" target="_blank"
                                                            href="/trips/2387426340/#wp2364074168"><i
                         class="fa fa-comment-o"></i>销量：4</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="/trips/2387426340">转发</a>
+                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
                 </p>
 
             </div>
         </div>
+
         <div class="box feed">
             <div class="top fn-clear">
                 <div class="user">
@@ -129,11 +130,12 @@
                         class="fa fa-heart-o"></i>价格：5</a><a class="btn-comment" target="_blank"
                                                           href="/trips/2387426340/#wp2364074168"><i
                         class="fa fa-comment-o"></i>销量：5</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="/trips/2387426340">转发</a>
+                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
                 </p>
 
             </div>
         </div>
+
         <div class="box feed">
             <div class="top fn-clear">
                 <div class="user">
@@ -163,11 +165,12 @@
                         class="fa fa-heart-o"></i>价格：9</a><a class="btn-comment" target="_blank"
                                                           href="/trips/2387426340/#wp2364074168"><i
                         class="fa fa-comment-o"></i>销量：8</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="/trips/2387426340">转发</a>
+                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
                 </p>
 
             </div>
         </div>
+
         <div class="box feed">
             <div class="top fn-clear">
                 <div class="user">
@@ -197,11 +200,12 @@
                         class="fa fa-heart-o"></i>价格：11</a><a class="btn-comment" target="_blank"
                                                            href="/trips/2387426340/#wp2364074168"><i
                         class="fa fa-comment-o"></i>销量：3</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="/trips/2387426340">转发</a>
+                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
                 </p>
 
             </div>
         </div>
+
         <div class="box feed">
             <div class="top fn-clear">
                 <div class="user">
@@ -231,7 +235,7 @@
                         class="fa fa-heart-o"></i>价格：22</a><a class="btn-comment" target="_blank"
                                                            href="/trips/2387426340/#wp2364074168"><i
                         class="fa fa-comment-o"></i>销量：1</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="/trips/2387426340">转发</a>
+                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
                 </p>
             </div>
 

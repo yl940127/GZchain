@@ -79,7 +79,7 @@ background-color: grey;
 	<div class="zxcf_menu_wper">
 		<div class="zxcf_menu px1000">
 			<a href="index1.jsp" class="zm_cura">首页</a> <a href="track.jsp" class="zm_cura">热门服务</a>
-			<a href="#">新手指引</a> <a href="#" style="margin-right:0;">关于我们</a>
+			<a href="transpondSpace.jsp">已完成任务</a> <a href="#" style="margin-right:0;">关于我们</a>
 		</div>
 	</div>
 	<!-- end  -->
