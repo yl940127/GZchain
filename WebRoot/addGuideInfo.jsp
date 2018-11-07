@@ -19,7 +19,7 @@
     </head>
 
     <body>
-        <%@include file="./public/page/header.html"%>
+        <%@include file="public/page/header.jsp"%>
 
            
                

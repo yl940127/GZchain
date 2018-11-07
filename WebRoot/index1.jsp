@@ -18,7 +18,7 @@
     <script src="./node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
 </head>
 <body>
-<%@include file="./public/page/header.html"%>
+<%@include file="public/page/header.jsp"%>
 <!-- 轮播图开始 -->
 <div id="carousel" class="carousel slide">
     <ol class="carousel-indicators">

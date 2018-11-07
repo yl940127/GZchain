@@ -11,6 +11,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 获取全部商品
+ */
 public class ProductDaoImp implements ProductDao {
     @Override
     public List<ProductVO> findAll() throws SQLException {
@@ -19,7 +22,7 @@ public class ProductDaoImp implements ProductDao {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
 
-        String sql = "select * from product limit 0,5";
+        String sql = "select * from product";
 
         pstmt = con.prepareStatement(sql);
         rs = pstmt.executeQuery();

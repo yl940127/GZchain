@@ -57,6 +57,8 @@ CREATE TABLE `share`(
   COMMENT '商品id',
   user_id    INT(20)               NOT NULL
   COMMENT '用户id',
+  path      VARCHAR(200)
+  COMMENT '转发路径',
   PRIMARY KEY `id`(`id`),
   KEY `product_id`(`product_id`),
   KEY `user_id`(`user_id`)

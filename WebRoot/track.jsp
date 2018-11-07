@@ -5,12 +5,23 @@
   Time: 21:09
   To change this template use File | Settings | File Templates.
 --%>
-<%@ page language="java" pageEncoding="utf-8"%>
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%@page import="entity.UsersDTO"%>
+<%@page import="entity.ProductVO"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%
+    String path = request.getContextPath();
+    String basePath = request.getScheme() + "://"
+            + request.getServerName() + ":" + request.getServerPort()
+            + path + "/";
+%>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>足迹</title>
+    <title>商品推荐</title>
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="node_modules/animate.css/animate.min.css">
     <link rel="stylesheet" href="node_modules/normalize.css/normalize.css">
@@ -25,221 +36,34 @@
 </head>
 <body>
 
-<%@include file="./public/page/header.html" %>>
+<%@include file="public/page/header.jsp" %>>
+
 <div class="container content-box">
 
     <div class="container-fluid animated bounceIn" id="masnory">
-        <div class="box feed">
-            <div class="top fn-clear">
-                <div class="user">
-                    <a class="avatar" target="_blank" href="/guoyan"><img
-                            src="http://photos.breadtrip.com/avatars_%E5%B0%8F%E9%83%ADgy_ed2b1b51c24e026f3a07eb761d3a8b87.jpg-avatar.m"
-                            alt=""></a>
-                    <div class="info">
-                        <p class="fn-clear">
-                            <span class="time"><i class="index-icons-time"></i>11小时前</span>
-                            <a class="username one-row-ellipsis" target="_blank" href="/guoyan"
-                               title="小猪芬蒂克">小猪芬蒂克</a>
-                        </p>
-                        <a class="tripname one-row-ellipsis" title="冰岛环游" target="_blank" href="/trips/2387426340">冰岛环游</a>
-                    </div>
+        <c:forEach items="${requestScope.tracks}" var="track">
+            <div class="box feed">
+
+                <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
+                    <img src="${track.imageUrls}" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
+                </a>
+
+                <div class="bottom">
+
+                    <p class="text">${track.name}</p>
+
+                    <p class="tool">
+                        <a class="btn-like" target="_blank" style="float: left" href="/trips/2387426340/#wp2364074168"><i
+                                class="fa fa-heart-o"></i>价格：${track.price}</a><a class="btn-comment" target="_blank"
+                                                                     href="/trips/2387426340/#wp2364074168"><i
+                            class="fa fa-comment-o"></i>销量：${track.saleNum}</a>
+                        <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
+
+                    </p>
+
                 </div>
             </div>
-
-            <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
-                <img src="image/feed/feed1.jpg" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
-            </a>
-
-            <div class="bottom">
-
-                <p class="text">泰国奶茶</p>
-
-                <p class="tool">
-                <a class="btn-like" target="_blank" style="float: left" href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-heart-o"></i>价格：1</a><a class="btn-comment" target="_blank"
-                                                          href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-comment-o"></i>销量：4</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
-
-                </p>
-
-            </div>
-        </div>
-
-        <div class="box feed">
-            <div class="top fn-clear">
-                <div class="user">
-                    <a class="avatar" target="_blank" href="/guoyan"><img
-                            src="./image/track1.jpg"
-                            alt=""></a>
-                    <div class="info">
-                        <p class="fn-clear">
-                            <span class="time"><i class="index-icons-time"></i>2小时前</span>
-                            <a class="username one-row-ellipsis" target="_blank" href="/guoyan"
-                               title="shan1230">shan1230</a>
-                        </p>
-                        <a class="tripname one-row-ellipsis" title="巴厘岛游行" target="_blank" href="/trips/2387426340">巴厘岛游行</a>
-                    </div>
-                </div>
-            </div>
-
-            <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
-                <img src="./image/track5.jpg" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
-            </a>
-
-            <div class="bottom">
-
-                <p class="text">泰国奶茶</p>
-
-                <p class="tool"><a class="btn-like" target="_blank" href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-heart-o"></i>价格:10</a><a class="btn-comment" target="_blank"
-                                                           href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-comment-o"></i>销量：4</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
-                </p>
-
-            </div>
-        </div>
-
-        <div class="box feed">
-            <div class="top fn-clear">
-                <div class="user">
-                    <a class="avatar" target="_blank" href="/guoyan"><img
-                            src="./image/track2.jpg"
-                            alt=""></a>
-                    <div class="info">
-                        <p class="fn-clear">
-                            <span class="time"><i class="index-icons-time"></i>1小时前</span>
-                            <a class="username one-row-ellipsis" target="_blank" href="/guoyan"
-                               title="孙岛主">孙岛主</a>
-                        </p>
-                        <a class="tripname one-row-ellipsis" title="众神花园-北海道" target="_blank" href="/trips/2387426340">众神花园-北海道</a>
-                    </div>
-                </div>
-            </div>
-
-            <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
-                <img src="./image/track4.jpg" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
-            </a>
-
-            <div class="bottom">
-
-                <p class="text">白酱油拉面</p>
-
-                <p class="tool"><a class="btn-like" target="_blank" href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-heart-o"></i>价格：5</a><a class="btn-comment" target="_blank"
-                                                          href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-comment-o"></i>销量：5</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
-                </p>
-
-            </div>
-        </div>
-
-        <div class="box feed">
-            <div class="top fn-clear">
-                <div class="user">
-                    <a class="avatar" target="_blank" href="/guoyan"><img
-                            src="./image/track3.jpg"
-                            alt=""></a>
-                    <div class="info">
-                        <p class="fn-clear">
-                            <span class="time"><i class="index-icons-time"></i>7小时前</span>
-                            <a class="username one-row-ellipsis" target="_blank" href="/guoyan"
-                               title="妖娆地主婆">妖娆地主婆</a>
-                        </p>
-                        <a class="tripname one-row-ellipsis" title="去南方拉长夏天的尾巴" target="_blank" href="/trips/2387426340">去南方拉长夏天的尾巴</a>
-                    </div>
-                </div>
-            </div>
-
-            <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
-                <img src="./image/track3.jpg" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
-            </a>
-
-            <div class="bottom">
-
-                <p class="text">圣佩特罗堡是菲律宾最古老的城堡之一</p>
-
-                <p class="tool"><a class="btn-like" target="_blank" href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-heart-o"></i>价格：9</a><a class="btn-comment" target="_blank"
-                                                          href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-comment-o"></i>销量：8</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
-                </p>
-
-            </div>
-        </div>
-
-        <div class="box feed">
-            <div class="top fn-clear">
-                <div class="user">
-                    <a class="avatar" target="_blank" href="/guoyan"><img
-                            src="./image/track4.jpg"
-                            alt=""></a>
-                    <div class="info">
-                        <p class="fn-clear">
-                            <span class="time"><i class="index-icons-time"></i>9小时前</span>
-                            <a class="username one-row-ellipsis" target="_blank" href="/guoyan"
-                               title="小猪芬蒂克">shan123</a>
-                        </p>
-                        <a class="tripname one-row-ellipsis" title="川西行" target="_blank" href="/trips/2387426340">川西行</a>
-                    </div>
-                </div>
-            </div>
-
-            <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
-                <img src="./image/track1.jpg" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
-            </a>
-
-            <div class="bottom">
-
-                <p class="text">中午途经炉霍县。</p>
-
-                <p class="tool"><a class="btn-like" target="_blank" href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-heart-o"></i>价格：11</a><a class="btn-comment" target="_blank"
-                                                           href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-comment-o"></i>销量：3</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
-                </p>
-
-            </div>
-        </div>
-
-        <div class="box feed">
-            <div class="top fn-clear">
-                <div class="user">
-                    <a class="avatar" target="_blank" href="/guoyan"><img
-                            src="./image/track5.jpg"
-                            alt=""></a>
-                    <div class="info">
-                        <p class="fn-clear">
-                            <span class="time"><i class="index-icons-time"></i>5小时前</span>
-                            <a class="username one-row-ellipsis" target="_blank" href="/guoyan"
-                               title="小猪芬蒂克">小猪芬蒂克</a>
-                        </p>
-                        <a class="tripname one-row-ellipsis" title="冰岛环游" target="_blank" href="/trips/2387426340">冰岛环游</a>
-                    </div>
-                </div>
-            </div>
-
-            <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
-                <img src="./image/track2.jpg" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
-            </a>
-
-            <div class="bottom">
-
-                <p class="text">古堡， 艳阳。</p>
-
-                <p class="tool"><a class="btn-like" target="_blank" href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-heart-o"></i>价格：22</a><a class="btn-comment" target="_blank"
-                                                           href="/trips/2387426340/#wp2364074168"><i
-                        class="fa fa-comment-o"></i>销量：1</a>
-                    <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
-                </p>
-            </div>
-
-        </div>
+        </c:forEach>
     </div>
 
     <div class="footer">
