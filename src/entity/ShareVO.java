@@ -15,6 +15,18 @@ public class ShareVO {
      * @return
      */
     private Long user_id;
+    /**
+     * 上一个用户的id
+     */
+    private Long preUser_id;
+
+    public Long getPreUser_id() {
+        return preUser_id;
+    }
+
+    public void setPreUser_id(Long preUser_id) {
+        this.preUser_id = preUser_id;
+    }
 
     public Long getUser_id() {
         return user_id;
