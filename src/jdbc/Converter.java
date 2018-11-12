@@ -5,10 +5,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import entity.CityDTO;
-import entity.GuidesDTO;
-import entity.TrackDTO;
-import entity.UsersDTO;
+import entity.*;
 
 public class Converter {
 	
@@ -77,6 +74,16 @@ public class Converter {
 		
 		return track;
 	}
-	
+
+	public static FriendVO convertToFriendVO(ResultSet rs) throws SQLException {
+		FriendVO friendVO = new FriendVO();
+		friendVO.setId(rs.getLong("id"));
+		friendVO.setUser_id(rs.getLong("user_id"));
+		friendVO.setRelation_userId(rs.getLong("relation_userId"));
+		friendVO.setRelationStatus(rs.getLong("relationStatus"));
+
+
+		return friendVO;
+	}
 	
 }

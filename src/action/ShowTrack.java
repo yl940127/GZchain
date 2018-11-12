@@ -57,6 +57,7 @@ public class ShowTrack extends HttpServlet {
 //		}
 //		//end
 
+//
 		ProductDaoImp productDaoImp = new ProductDaoImp();
 		List <ProductVO> tracks = new ArrayList<>();
 		try{
@@ -66,7 +67,7 @@ public class ShowTrack extends HttpServlet {
 		}
 		System.out.println(tracks);
 		request.setAttribute("tracks", tracks);
-
+		// forward 是用来传递request
 		request.getRequestDispatcher("track.jsp").forward(request, response);
 	}
 
