@@ -45,7 +45,7 @@
             <div class="box feed">
 
                 <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
-                    <img src="${track.imageUrls}" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
+                    <img src="${track.imageUrls}" alt="商品展示" width="285" height="213" class="hidden">
                 </a>
 
                 <div class="bottom">
@@ -57,7 +57,7 @@
                                 class="fa fa-heart-o"></i>价格：${track.price}</a><a class="btn-comment" target="_blank"
                                                                      href="/trips/2387426340/#wp2364074168"><i
                             class="fa fa-comment-o"></i>销量：${track.saleNum}</a>
-                        <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpondSpace.jsp">转发</a>
+                        <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpond?pdt_id=${track.id}">转发</a>
 
                     </p>
 
