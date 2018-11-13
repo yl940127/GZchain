@@ -66,3 +66,31 @@ CREATE TABLE `share`(
 )
   COMMENT '用户分享表';
 
+/*CREATE TABLE `friend`(
+  id INT(20)                      NOT NULL AUTO_INCREMENT
+  COMMENT 'id',
+  user_id1 INT(20)                 NOT NULL
+  COMMENT '用户id',
+  user_id2  INT(20)                NOT NULL
+  COMMENT '用户id',
+  Status INT(10),                 DEFAULT 0
+  COMMENT '关系状态'
+  )
+  COMMENT '朋友表'*/
+
+CREATE TABLE  `friend`(
+    id      INT(20)             NOT NULL AUTO_INCREMENT
+    COMMENT 'id',
+    user_id    INT (20)         NOT NULL
+    COMMENT '用户id',
+    relation_userId    INT(20)         NOT NULL
+    COMMENT '关系id',
+    relationStatus    INT (10)         NOT NULL
+    COMMENT '关系状态',
+    PRIMARY KEY `id`(`id`),
+    KEY `user_id`(`user_id`),
+    KEY `relation_userId`(`relation_userId`)
+)
+  COMMENT '朋友表';
+
+  /*好友关系分为单项好友关系和多项好友关系，类似于微博的那种*/
