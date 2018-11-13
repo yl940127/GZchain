@@ -80,7 +80,7 @@ public class Converter {
 		friendVO.setId(rs.getLong("id"));
 		friendVO.setUser_id(rs.getLong("user_id"));
 		friendVO.setRelation_userId(rs.getLong("relation_userId"));
-		friendVO.setRelationStatus(rs.getLong("relationStatus"));
+		friendVO.setRelationStatus(rs.getInt("relationStatus"));
 
 
 		return friendVO;

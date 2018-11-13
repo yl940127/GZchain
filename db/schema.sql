@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `product`;
 DROP TABLE IF EXISTS `share`;
+DROP TABLE IF EXISTS `friend`;
 
 CREATE TABLE  `users`(
     userId      INT(20)             NOT NULL AUTO_INCREMENT
@@ -28,6 +29,21 @@ CREATE TABLE  `users`(
     PRIMARY KEY `userId`(`userId`)
 )
   COMMENT '用户表';
+
+CREATE TABLE  `friend`(
+    id      INT(20)             NOT NULL AUTO_INCREMENT
+    COMMENT 'id',
+    user_id    INT (20)         NOT NULL
+    COMMENT '用户id',
+    relation_userId    INT(20)         NOT NULL
+    COMMENT '关系id',
+    relationStatus    INT (10)         NOT NULL
+    COMMENT '关系状态',
+    PRIMARY KEY `id`(`id`),
+    KEY `user_id`(`user_id`),
+    KEY `relation_userId`(`relation_userId`)
+)
+  COMMENT '朋友表';
 
 CREATE TABLE `product` (
   id          INT(20)               NOT NULL  AUTO_INCREMENT

@@ -12,11 +12,13 @@ public class FriendVO {
      */
     private Long user_id;
     /**
-     * 上一个用户的id
+     * 用户关系的id
      */
     private Long relation_userId;
-
-    private Long relationStatus;
+    /**
+     * 用户关系状态
+     */
+    private int relationStatus;
 
 
     public Long getId() {
@@ -43,11 +45,11 @@ public class FriendVO {
         this.relation_userId = relation_userId;
     }
 
-    public Long getRelationStatus() {
+    public int getRelationStatus() {
         return relationStatus;
     }
 
-    public void setRelationStatus(Long relationStatus) {
+    public void setRelationStatus(int relationStatus) {
         this.relationStatus = relationStatus;
     }
 }
