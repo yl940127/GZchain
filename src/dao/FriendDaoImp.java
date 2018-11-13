@@ -1,6 +1,7 @@
 package dao;
 
 import entity.FriendVO;
+import entity.UsersDTO;
 import jdbc.Converter;
 import jdbc.JDBCUtil;
 
@@ -11,24 +12,23 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
+/**找到当前用户的朋友
  * @author sxl
  * @create 2018-11-11 21:37
  **/
 
-public class FriendDaoImp implements friendDao {
+public class FriendDaoImp implements FriendDao {
     @Override
-    public List<FriendVO> findAllFriendsInfoByPrimaryKey(Long userid) {
+    public List<UsersDTO> findFriendsByUserId(Long userid) {
         //获取连接
         Connection con = JDBCUtil.getConnection();
         ResultSet rs = null;
-//        List<Long> list = new ArrayList<Long>();
         List<FriendVO> list = new ArrayList<>();
 
         //预编译
         PreparedStatement pstmt = null;
-        String sql = "select * from friend where user_id =?";
-        FriendVO friendVO = null;
+        String sql = "SELECT * FROM users WHERE userId IN (select relation_userId from friend where user_id =? AND relationStatus = 1)";
+        List<UsersDTO>users = new ArrayList<>();
         try {
 //            pstmt.execute(sql);
             pstmt = con.prepareStatement(sql);
@@ -36,8 +36,7 @@ public class FriendDaoImp implements friendDao {
             pstmt.setObject(1,userid);
             rs = pstmt.executeQuery();
             while (rs.next()){
-                friendVO = Converter.convertToFriendVO(rs);
-                list.add(friendVO);
+                users.add(Converter.convertToUsersDTO(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -45,31 +44,6 @@ public class FriendDaoImp implements friendDao {
             JDBCUtil.close(rs, pstmt, con);
         }
 
-        return list;
-    }
-
-    @Override
-    public List<Long> findAllFriendsIdByPrimaryKey(Long userid) {
-        Connection con = JDBCUtil.getConnection();
-        ResultSet rs = null;
-        List<Long> listIds = new ArrayList<>();
-
-        //准备sql语句，与数据库进行交互
-        PreparedStatement pstmt = null;
-        String sql = "select relation_userId from friend where user_id=?";
-
-        try {
-            pstmt = con.prepareStatement(sql);
-            pstmt.setObject(1,userid);
-            rs = pstmt.executeQuery();
-            while (rs.next()){
-                listIds.add(rs.getLong("relation_userId"));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }finally {
-            JDBCUtil.close(rs,pstmt,con);
-        }
-        return listIds;
+        return users;
     }
 }

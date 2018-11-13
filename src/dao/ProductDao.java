@@ -11,5 +11,12 @@ public interface ProductDao {
      * @return
      */
     List<ProductVO> findAll()throws SQLException;
+
+    /**
+     * 根据商品id查找商品
+     * @param pro_id
+     * @return
+     * @throws SQLException
+     */
     ProductVO findProductById(Long pro_id)throws SQLException;
 }
