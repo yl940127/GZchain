@@ -42,27 +42,28 @@
 
     <div class="container-fluid animated bounceIn" id="masnory">
         <c:forEach items="${requestScope.tracks}" var="track">
-            <div class="box feed">
+            <c:forEach items="${track.sharedProList}" var="product">
+                <div class="box feed">
+                    <p class="text">转发人:${track.user.username}</p>
+                    <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
+                        <img src="${product.imageUrls}" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
+                    </a>
 
-                <a class="pic" target="_blank" href="/trips/2387426340/#wp2364074168">
-                    <img src="${track.imageUrls}" alt="冰岛环游-2364074168" width="285" height="213" class="hidden">
-                </a>
+                    <div class="bottom">
 
-                <div class="bottom">
+                        <p class="text">${product.name}</p>
 
-                    <p class="text">${track.name}</p>
+                        <p class="tool">
+                            <a class="btn-like" target="_blank" style="float: left" href="/trips/2387426340/#wp2364074168"><i
+                                    class="fa fa-heart-o"></i>价格：${product.price}</a><a class="btn-comment" target="_blank"
+                                                                                        href="/trips/2387426340/#wp2364074168"><i
+                                class="fa fa-comment-o"></i>销量：${product.saleNum}</a>
+                            <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpond?/pdt_id=${product.id}&pre_userid=${track.user.userid}">转发</a>
+                        </p>
 
-                    <p class="tool">
-                        <a class="btn-like" target="_blank" style="float: left" href="/trips/2387426340/#wp2364074168"><i
-                                class="fa fa-heart-o"></i>价格：${track.price}</a><a class="btn-comment" target="_blank"
-                                                                     href="/trips/2387426340/#wp2364074168"><i
-                            class="fa fa-comment-o"></i>销量：${track.saleNum}</a>
-                        <a class="tripname one-row-ellipsis"  target="_blank" style="float: right" href="transpond">转发</a>
-
-                    </p>
-
+                    </div>
                 </div>
-            </div>
+            </c:forEach>
         </c:forEach>
     </div>
 

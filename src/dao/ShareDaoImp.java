@@ -79,16 +79,19 @@ public class ShareDaoImp implements ShareDao {
             pstmt = con.prepareStatement(sql);
             pstmt.setLong(1,id);
             rs = pstmt.executeQuery();
-            ProductVO product = new ProductVO();
-            product.setId(rs.getLong("id"));
-            product.setName(rs.getString("NAME"));
-            product.setPrice(rs.getBigDecimal("price"));
-            product.setStatus(PlaceEnum.ProductStatus.ON_SALE);
-            product.setStoreNum(rs.getInt("store_num"));
-            product.setSaleNum(rs.getInt("sale_num"));
-            product.setImageUrls(rs.getString("image_urls"));
-            product.setCommentNum(rs.getLong("comment_num"));
-            products.add(product);
+            while (rs.next()){
+                ProductVO product = new ProductVO();
+                product.setId(rs.getLong("id"));
+                product.setName(rs.getString("NAME"));
+                product.setPrice(rs.getBigDecimal("price"));
+                product.setStatus(PlaceEnum.ProductStatus.ON_SALE);
+                product.setStoreNum(rs.getInt("store_num"));
+                product.setSaleNum(rs.getInt("sale_num"));
+                product.setImageUrls(rs.getString("image_urls"));
+                product.setCommentNum(rs.getLong("comment_num"));
+                products.add(product);
+            }
+
         }catch (Exception e){
             e.printStackTrace();
         }finally {
@@ -96,6 +99,27 @@ public class ShareDaoImp implements ShareDao {
         }
 
         return products;
+    }
+
+    // 根据分享商品ID和用户Id，直接将记录写入分享表中。
+    public static int insertShare(long product_id, long user_id,long preUser_id) throws SQLException{
+        Connection con = JDBCUtil.getConnection();
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String sql = "insert into share(product_id, user_id, preUser_id) values(?,?,?)";
+        int result = 0;
+        try {
+            pstmt = con.prepareStatement(sql);
+            pstmt.setObject(1,product_id);
+            pstmt.setObject(2,user_id);
+            pstmt.setLong(3,preUser_id);
+            result = pstmt.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.close(rs, pstmt, con);
+        }
+        return result;
     }
 
 }
