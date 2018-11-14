@@ -2,6 +2,7 @@ package action;
 
 import dao.FriendDaoImp;
 import dao.ShareDaoImp;
+import dao.userDaoImpl;
 import entity.*;
 
 import javax.servlet.ServletException;
@@ -47,12 +48,16 @@ public class TranspondAction extends HttpServlet {
 
 		Long userId;
 		List<UsersDTO> friendList;
-		List <UserWithSharedPro> tracks=new ArrayList<>();
+		List <UserWithSharedPro> tracks;
 
 		userId = getUserIdFromSession(request);
+
 		friendList = getFriends(userId);
+		if(hasNum(request,userId)){
+			doTranspondAction(request,userId);
+		}
+
 		tracks = pakageSharedInfo(friendList);
-		doTranspondAction(request,userId);
 		request.setAttribute("tracks", tracks);
 		request.getRequestDispatcher("myTransponds.jsp").forward(request, response);
 	}
@@ -77,8 +82,15 @@ public class TranspondAction extends HttpServlet {
 		return usersDTO.getUserid();
 	}
 
-	// 处理当前用户的转发操作。
-	// 在shared表中添加一条记录，并显示转发信息。
+	// 判断页面是否传入了参数
+	public boolean hasNum (HttpServletRequest request,long userId){
+		if (request.getParameter("pre_userid")==null
+				&&request.getParameter("pdt_id")==null){
+			return false;
+		}else
+			return true;
+	}
+
 	public void doTranspondAction(HttpServletRequest request,long userId){
 		long productId = Long.parseLong(request.getParameter("pdt_id"));
 		long pre_userid;
@@ -124,8 +136,13 @@ public class TranspondAction extends HttpServlet {
 	public List<UsersDTO> getFriends(Long user_id){
 
 		FriendDaoImp friendDaoImp = new FriendDaoImp();
+		userDaoImpl userImpl = new userDaoImpl();
+		UsersDTO currentUser = userImpl.selectByPrimartyKey(user_id);
+
 		List<UsersDTO> friends ;
 		friends = friendDaoImp.findFriendsByUserId(user_id);
+		//将自身加入到表中，用于“动态”的展示
+		friends.add(currentUser);
 		return friends;
 	}
 
