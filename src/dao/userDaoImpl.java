@@ -79,7 +79,7 @@ public class userDaoImpl implements userDao {
 		Connection con = JDBCUtil.getConnection();
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		String sql = "insert into users(userId, username, password, realName, email, telNum, idCard, birthday, education, sex, headImgUrl) values(?,?,?,?,?,?,?,?,?,?,?)";
+		String sql = "insert into users(userId, username, password, realName, email, telNum, idCard, birthday, education, gender, headImgUrl) values(?,?,?,?,?,?,?,?,?,?,?)";
 		int result = 0;
 		
 		try {
@@ -144,7 +144,7 @@ public class userDaoImpl implements userDao {
 	}
 
 	@Override
-	public UsersDTO selectByPrimartyKey(String userid) {
+	public UsersDTO selectByPrimartyKey(Long userid) {
 		Connection con = JDBCUtil.getConnection();
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;

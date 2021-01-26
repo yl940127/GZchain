@@ -75,8 +75,6 @@ public class LoginAction extends HttpServlet {
 			response.sendRedirect("index.jsp");
 		}
 		else{
-
-
 			response.sendRedirect("findService1.jsp");
 		}
 		

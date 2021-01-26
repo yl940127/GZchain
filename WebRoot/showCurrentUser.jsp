@@ -19,7 +19,7 @@
     </head>
 
     <body>
-        <%@include file="./public/page/header.html"%>
+        <%@include file="public/page/header.jsp"%>
 
            
                 <div class="menu-item col-lg-9 col-md-9 col-sm-6 col-xs-6">

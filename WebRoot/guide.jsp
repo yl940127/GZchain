@@ -17,7 +17,7 @@
     <script src="node_modules/masonry-layout/dist/masonry.pkgd.js"></script>
 </head>
 <body>
-    <%@include file="./public/page/header.html"%>
+    <%@include file="public/page/header.jsp"%>
     
     <div class="container content-box">
         <div class="info col-lg-3 col-md-3 col-sm-12 col-xs-12">

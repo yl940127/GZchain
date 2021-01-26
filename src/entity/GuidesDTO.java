@@ -16,7 +16,7 @@ public class GuidesDTO implements Serializable {
 
     private String address;
 
-    private String userid;
+    private Long userid;
 
     private String introduce;
 
@@ -62,11 +62,11 @@ public class GuidesDTO implements Serializable {
         this.address = address;
     }
 
-    public String getUserid() {
+    public Long getUserid() {
         return userid;
     }
 
-    public void setUserid(String userid) {
+    public void setUserid(Long userid) {
         this.userid = userid;
     }
 

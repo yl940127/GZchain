@@ -19,7 +19,7 @@ public class TrackDTO implements Serializable {
 
     private Integer thumbupcount;
 
-    private String userid;
+    private Long userid;
 
     private static final long serialVersionUID = 1L;
 
@@ -71,11 +71,11 @@ public class TrackDTO implements Serializable {
         this.thumbupcount = thumbupcount;
     }
 
-    public String getUserid() {
+    public Long getUserid() {
         return userid;
     }
 
-    public void setUserid(String userid) {
+    public void setUserid(Long userid) {
         this.userid = userid;
     }
 

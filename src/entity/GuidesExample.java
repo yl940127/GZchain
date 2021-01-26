@@ -14,7 +14,7 @@ public class GuidesExample {
 
     private String address = null;
 
-    private String userid = null;
+    private Long userid = null;
 
     private String introduce = null;
 
@@ -58,11 +58,11 @@ public class GuidesExample {
 		this.address = address;
 	}
 
-	public String getUserid() {
+	public Long getUserid() {
 		return userid;
 	}
 
-	public void setUserid(String userid) {
+	public void setUserid(Long userid) {
 		this.userid = userid;
 	}
 

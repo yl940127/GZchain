@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `product`;
 DROP TABLE IF EXISTS `share`;
-DROP TABLE IF EXISTS `user_share`;
+DROP TABLE IF EXISTS `friend`;
 
 CREATE TABLE  `users`(
     userId      INT(20)             NOT NULL AUTO_INCREMENT
@@ -30,10 +30,25 @@ CREATE TABLE  `users`(
 )
   COMMENT '用户表';
 
+CREATE TABLE  `friend`(
+    id      INT(20)             NOT NULL AUTO_INCREMENT
+    COMMENT 'id',
+    user_id    INT (20)         NOT NULL
+    COMMENT '用户id',
+    relation_userId    INT(20)         NOT NULL
+    COMMENT '关系id',
+    relationStatus    INT (10)         NOT NULL
+    COMMENT '关系状态',
+    PRIMARY KEY `id`(`id`),
+    KEY `user_id`(`user_id`),
+    KEY `relation_userId`(`relation_userId`)
+)
+  COMMENT '朋友表';
+
 CREATE TABLE `product` (
   id          INT(20)               NOT NULL  AUTO_INCREMENT
   COMMENT 'id',
-  productName        VARCHAR(32)    NOT NULL
+  NAME        VARCHAR(32)    NOT NULL
   COMMENT '商品名称',
   price       DECIMAL(10, 2)        NOT NULL
   COMMENT '价格',
@@ -56,20 +71,42 @@ CREATE TABLE `share`(
   COMMENT 'id',
   product_id  INT(20)              NOT NULL
   COMMENT '商品id',
-  PRIMARY KEY `id`(`id`),
-  KEY `product_id`(`product_id`)
-)
-  COMMENT '商品分享表';
-
-CREATE TABLE `user_share`(
-  id         INT(20)               NOT NULL AUTO_INCREMENT
-  COMMENT 'id',
   user_id    INT(20)               NOT NULL
   COMMENT '用户id',
-  share_id   INT(20)               NOT NULL
-  COMMENT '商品分享id',
+  preUser_id  INT(20)
+  COMMENT '上一个用户',
   PRIMARY KEY `id`(`id`),
+  KEY `product_id`(`product_id`),
   KEY `user_id`(`user_id`),
-  KEY `share_id`(`share_id`)
+  KEY `preUser_id`(`preUser_id`)
 )
-   COMMENT '用户分享关系表';
+  COMMENT '用户分享表';
+
+/*CREATE TABLE `friend`(
+  id INT(20)                      NOT NULL AUTO_INCREMENT
+  COMMENT 'id',
+  user_id1 INT(20)                 NOT NULL
+  COMMENT '用户id',
+  user_id2  INT(20)                NOT NULL
+  COMMENT '用户id',
+  Status INT(10),                 DEFAULT 0
+  COMMENT '关系状态'
+  )
+  COMMENT '朋友表'*/
+
+CREATE TABLE  `friend`(
+    id      INT(20)             NOT NULL AUTO_INCREMENT
+    COMMENT 'id',
+    user_id    INT (20)         NOT NULL
+    COMMENT '用户id',
+    relation_userId    INT(20)         NOT NULL
+    COMMENT '关系id',
+    relationStatus    INT (10)         NOT NULL
+    COMMENT '关系状态',
+    PRIMARY KEY `id`(`id`),
+    KEY `user_id`(`user_id`),
+    KEY `relation_userId`(`relation_userId`)
+)
+  COMMENT '朋友表';
+
+  /*好友关系分为单项好友关系和多项好友关系，类似于微博的那种*/

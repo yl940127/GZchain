@@ -71,15 +71,14 @@ background-color: grey;
 				<img src="images/zxcf_logo.png" alt="">
 			</div>
 			<div class="zxcf_nav_r fr">
-				<img src="images/zxcf_perinfo.png" alt=""> <span onclick="toIndex()">个人中心</span>
+                <img src="images/zxcf_perinfo.png" alt=""> <span> onclick="toIndex()">个人中心</span>>
 				</ul>
 			</div>
 		</div>
 	</div>
 	<div class="zxcf_menu_wper">
 		<div class="zxcf_menu px1000">
-			<a href="index1.jsp" class="zm_cura">首页</a> <a href="showtrack" class="zm_cura">热门服务</a>
-			<a href="transpond">我的转发空间</a> <a href="#" style="margin-right:0;">关于我们</a>
+			<a href="transpondSpace.jsp" class="zm_cura">我的任务空间</a>
 		</div>
 	</div>
 	<!-- end  -->
@@ -87,31 +86,23 @@ background-color: grey;
 		<div class="invest_con px1000">
 			<div class="product_choose">
 				<h2 class="product_tit clearfix">
-					<em class="proall fl">全部服务产品</em>
-					
+					<em class="proall fl">全部任务</em>
+
 
 				</h2>
 				<div class="product_box">
 					<div class="product_list">
 						<div class="invest_prochoose">
 							<p id="serviceStatus">
-								<span>服务状态：</span><a href="#" class="inpro_cura" value="noLimit">不限</a>
-								<a href="#" value="notCheck">正在招标的服务</a><a href="#" value="achieved">已成功的服务</a>
+								<span>任务状态：</span><a href="#" class="inpro_cura" value="noLimit">不限</a>
+								<a href="#" value="notCheck">正在进行的任务</a><a href="#" value="achieved">已成功的服务</a>
 							</p>
-							<p id="serviceTime">
-								<span>提供住宿：</span><a href="#" class="inpro_cura" value="0">不限</a><a 
-									href="#" value="1" id="roomTrue">是</a><a href="#" value="3" id="roomFalse">否</a>
-							</p>
+
 							<p id="serviceType">
 								<span>服务类型：</span><a href="#" class="inpro_cura" value="noLimit">不限</a><a
-									href="#" value="net">义工旅行</a><a href="#" value="tour">个人旅游</a>
+									href="#" value="net">数据标注</a><a href="#" value="tour">广告推销</a>
 							</p>
-							<p id="serviceSalary">
-								<span>服务地区：</span><a href="#" class="inpro_cura" value="noLimit">不限</a><a
-									href="#" value="杭州">杭州</a><a href="#" value="北京">北京</a><a href="#" value="广州">广州</a><a
-									href="#" value="西藏">西藏</a>
-							</p>
-							
+
 						</div>
 					</div>
 					<!--  -->
@@ -249,7 +240,7 @@ background-color: grey;
 										</p>
 								</div>
 							</li>
-							
+
 						</ul>
 				<!-- <div class="prolist_one prolist_one_bl01 mt20">
 					<h2 class="prolist_one_tit">
@@ -354,6 +345,7 @@ background-color: grey;
 		</div>
 	</div>
 	<!-- footer end -->
+
 	<script src="./js/findService.js"></script> 
 </body>
 </html>

@@ -5,16 +5,13 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import entity.CityDTO;
-import entity.GuidesDTO;
-import entity.TrackDTO;
-import entity.UsersDTO;
+import entity.*;
 
 public class Converter {
 	
 	public static UsersDTO convertToUsersDTO(ResultSet rs) throws SQLException {
 		UsersDTO user = new UsersDTO();
-		user.setUserid(rs.getString("userId"));
+		user.setUserid(rs.getLong("userId"));
 		user.setUsername(rs.getString("username"));
 		user.setPassword(rs.getString("password"));
 		user.setRealname(rs.getString("realName"));
@@ -37,7 +34,7 @@ public class Converter {
 		guide.setProvinceid(rs.getString("provinceId"));
 		guide.setCityid(rs.getString("cityId"));
 		guide.setAddress(rs.getString("address"));
-		guide.setUserid(rs.getString("userId"));
+		guide.setUserid(rs.getLong("userId"));
 		
 		return guide;
 	}
@@ -73,10 +70,20 @@ public class Converter {
 		track.setTrackimgurl(rs.getString("trackImgUrl"));
 		track.setLocation(rs.getString("location"));
 		track.setThumbupcount(rs.getInt("thumbUpCount"));
-		track.setUserid(rs.getString("userId"));
+		track.setUserid(rs.getLong("userId"));
 		
 		return track;
 	}
-	
+
+	public static FriendVO convertToFriendVO(ResultSet rs) throws SQLException {
+		FriendVO friendVO = new FriendVO();
+		friendVO.setId(rs.getLong("id"));
+		friendVO.setUser_id(rs.getLong("user_id"));
+		friendVO.setRelation_userId(rs.getLong("relation_userId"));
+		friendVO.setRelationStatus(rs.getInt("relationStatus"));
+
+
+		return friendVO;
+	}
 	
 }

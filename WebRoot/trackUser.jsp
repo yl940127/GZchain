@@ -3688,7 +3688,7 @@
 
             <div id="header" class="new-header">
 
-                <%@include file="./public/page/header.html" %>
+                <%@include file="public/page/header.jsp" %>
             </div>
         
 

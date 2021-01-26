@@ -2,6 +2,7 @@ package action;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -9,7 +10,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import dao.ProductDao;
+import dao.ProductDaoImp;
 import dao.TrackDaoImpl;
+import entity.ProductVO;
 import entity.TrackDTO;
 import entity.TrackExample;
 
@@ -31,6 +35,7 @@ public class ShowTrack extends HttpServlet {
 	}
 
 	/**
+	 * 获取商品信息
 	 * The doGet method of the servlet. <br>
 	 *
 	 * This method is called when a form has its tag value method equals to get.
@@ -43,16 +48,26 @@ public class ShowTrack extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		TrackDaoImpl trackDaoImpl = new TrackDaoImpl();
-		List<TrackDTO> tracks = trackDaoImpl.selectBySituation(new TrackExample());
-		
-		//debug
-		for(TrackDTO t : tracks) {
-			System.out.println(t);
+//		TrackDaoImpl trackDaoImpl = new TrackDaoImpl();
+//		List<TrackDTO> tracks = trackDaoImpl.selectBySituation(new TrackExample());
+//
+//		//debug
+//		for(TrackDTO t : tracks) {
+//			System.out.println(t);
+//		}
+//		//end
+
+//
+		ProductDaoImp productDaoImp = new ProductDaoImp();
+		List <ProductVO> tracks = new ArrayList<>();
+		try{
+			 tracks = productDaoImp.findAll();
+		}catch (Exception e){
+			e.printStackTrace();
 		}
-		//end
-		
+		System.out.println(tracks);
 		request.setAttribute("tracks", tracks);
+		// forward 是用来传递request
 		request.getRequestDispatcher("track.jsp").forward(request, response);
 	}
 

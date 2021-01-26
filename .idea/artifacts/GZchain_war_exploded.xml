@@ -1,12 +1,13 @@
 <component name="ArtifactManager">
-  <artifact type="exploded-war" name="PSP2:war exploded">
-    <output-path>$PROJECT_DIR$/out/artifacts/PSP2_war_exploded</output-path>
+  <artifact type="exploded-war" name="GZchain:war exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/GZchain_war_exploded</output-path>
     <root id="root">
       <element id="directory" name="WEB-INF">
         <element id="directory" name="classes">
           <element id="module-output" name="GZchain" />
         </element>
         <element id="directory" name="lib">
+          <element id="library" level="project" name="lib" />
           <element id="library" level="project" name="junit-4.12" />
         </element>
       </element>
